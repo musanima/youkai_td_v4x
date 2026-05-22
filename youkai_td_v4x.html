@@ -7,8 +7,8 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#111;display:flex;justify-content:center;font-family:'Noto Serif JP',serif;touch-action:none;user-select:none;}
-#app{width:100%;max-width:420px;background:#0a0a18;min-height:100dvh;position:relative;display:flex;flex-direction:column;}
+body{background:#111;display:flex;justify-content:center;font-family:'Noto Serif JP',serif;touch-action:pan-y;user-select:none;}
+#app{width:100%;max-width:420px;background:#0a0a18;min-height:100dvh;position:relative;display:flex;flex-direction:column;touch-action:pan-y;}
 
 /* ===== SCREENS ===== */
 .screen{display:none;position:absolute;inset:0;flex-direction:column;z-index:1;}
@@ -65,7 +65,7 @@ body{background:#111;display:flex;justify-content:center;font-family:'Noto Serif
 .hc.gem-hud{cursor:default;}
 .gem-progress{display:inline-block;margin-left:3px;font-size:9px;color:#ffd740;}
 #canvas-wrap{flex:1;position:relative;min-height:0;}
-canvas{display:block;width:100%;height:100%;}
+canvas{display:block;width:100%;height:100%;touch-action:none;}
 #bottom-hud{padding:4px 8px 5px;background:rgba(0,0,0,0.85);border-top:2px solid rgba(255,255,255,0.15);flex-shrink:0;}
 .castle-bar{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
 .castle-bar span{font-size:9px;color:#aaa;white-space:nowrap;}
@@ -75,7 +75,7 @@ canvas{display:block;width:100%;height:100%;}
 #unit-row{display:flex;gap:4px;justify-content:center;}
 
 /* カード */
-.ucard{position:relative;width:56px;height:64px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;touch-action:none;transition:opacity 0.15s,box-shadow 0.15s;}
+.ucard{position:relative;width:56px;height:64px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;touch-action:manipulation;transition:opacity 0.15s,box-shadow 0.15s;}
 .ucard.has-ult{border-color:rgba(255,215,0,0.9);box-shadow:0 0 0 2px rgba(255,215,0,0.7),0 0 16px rgba(255,200,0,0.8),0 0 30px rgba(255,150,0,0.4);animation:ultGlow 1.2s ease-in-out infinite;}
 @keyframes ultGlow{0%,100%{box-shadow:0 0 0 2px rgba(255,215,0,0.7),0 0 16px rgba(255,200,0,0.8),0 0 30px rgba(255,150,0,0.4);}50%{box-shadow:0 0 0 3px rgba(255,215,0,1),0 0 24px rgba(255,200,0,1),0 0 44px rgba(255,150,0,0.6);}}
 .ucard .ue{font-size:21px;line-height:1;}
@@ -599,8 +599,9 @@ function setupLongPress(card,id){
     pressingId=null;
   }
   card.addEventListener('touchstart',e=>{
-    if(e.touches.length===1){ startPress(e); }
-  },{passive:true});
+    // ドラッグ中でなければ長押し判定を開始
+    if(e.touches.length===1 && !dragging){ startPress(e); }
+  },{passive:true}); // 長押しはpassive:trueのまま（dragのpassive:falseが先に登録される）
   card.addEventListener('touchend',e=>{
     // 長押しタイマーが走っていたらキャンセル（ドラッグ召喚には進ませない）
     cancelPress();
@@ -630,7 +631,7 @@ function setupDrag(card,id){
   function onStart(e){
     if(!G||G.gameOver||G.cdTimers[id]>0||G.fieldCount[id]>=gc_def(id).maxField) return;
     if(pressTimer) return; // 長押しタイマー中はドラッグしない
-    e.preventDefault();
+    e.preventDefault(); // スクロールを防いでドラッグ優先
     dragging=card; dragId=id;
     const p=getCP(e);
     ghost.textContent=gc_def(id).emoji; ghost.style.display='block';
@@ -639,11 +640,13 @@ function setupDrag(card,id){
     dragLane=cxToLane(p.x,gc_def(id).laneSize);
   }
   card.addEventListener('mousedown',onStart);
+  // passive:false でないと preventDefault() が効かずスクロールが勝つ
   card.addEventListener('touchstart',onStart,{passive:false});
 }
 
 function onMove(e){
-  if(!dragging)return; e.preventDefault();
+  if(!dragging) return;
+  if(e.cancelable) e.preventDefault();
   const p=getCP(e);
   ghost.style.left=p.x+'px'; ghost.style.top=p.y+'px';
   const ls=gc_def(dragId).laneSize;
