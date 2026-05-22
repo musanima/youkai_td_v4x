@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>タッチデバッグ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:sans-serif;background:#1a1a2e;color:#fff;padding:16px;min-height:100vh;}
+h2{font-size:16px;margin-bottom:12px;color:#ffd740;}
+#log{background:rgba(0,0,0,0.5);border-radius:8px;padding:10px;font-size:11px;line-height:1.8;height:200px;overflow-y:auto;margin-bottom:12px;font-family:monospace;}
+.card{width:80px;height:90px;background:rgba(255,255,255,0.1);border:2px solid rgba(255,215,64,0.5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:32px;cursor:grab;touch-action:manipulation;user-select:none;margin:0 auto 12px;}
+#drop-zone{width:100%;height:120px;border:2px dashed rgba(100,255,100,0.4);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;color:rgba(100,255,100,0.6);margin-bottom:12px;}
+#drop-zone.over{background:rgba(100,255,100,0.1);border-color:rgba(100,255,100,0.8);}
+#ghost{position:fixed;pointer-events:none;font-size:36px;display:none;transform:translate(-50%,-50%);z-index:999;}
+#result{font-size:14px;color:#2ecc71;text-align:center;min-height:24px;}
+button{padding:8px 16px;border:1px solid rgba(255,255,255,0.3);border-radius:6px;background:rgba(255,255,255,0.1);color:#fff;font-size:12px;margin-top:8px;width:100%;}
+</style>
+</head>
+<body>
+<h2>🔧 タッチドラッグ デバッグ</h2>
+<div id="log">ログ待機中...<br></div>
+<div class="card" id="card">🐢</div>
+<div id="drop-zone">ここにドロップ</div>
+<div id="result"></div>
+<div id="ghost">🐢</div>
+<button onclick="clearLog()">ログクリア</button>
+
+<script>
+const log = document.getElementById('log');
+const card = document.getElementById('card');
+const dropZone = document.getElementById('drop-zone');
+const ghost = document.getElementById('ghost');
+const result = document.getElementById('result');
+
+let dragging = false;
+
+function addLog(msg, color){
+  const d = document.createElement('div');
+  d.style.color = color||'#fff';
+  d.textContent = new Date().toLocaleTimeString('ja',{hour12:false}) + ' ' + msg;
+  log.prepend(d);
+}
+function clearLog(){ log.innerHTML=''; }
+
+// タッチ開始
+card.addEventListener('touchstart', e=>{
+  addLog('touchstart fires ✅ touches:'+e.touches.length, '#2ecc71');
+  addLog('cancelable:'+e.cancelable+' passive check', '#aaa');
+  e.preventDefault();
+  addLog('preventDefault() called', '#ffd740');
+  dragging = true;
+  ghost.style.display = 'block';
+  const t = e.touches[0];
+  ghost.style.left = t.clientX+'px';
+  ghost.style.top  = t.clientY+'px';
+  addLog('ghost表示 x:'+Math.round(t.clientX)+' y:'+Math.round(t.clientY), '#5dade2');
+}, {passive:false});
+
+card.addEventListener('touchmove', e=>{
+  if(!dragging) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  ghost.style.left = t.clientX+'px';
+  ghost.style.top  = t.clientY+'px';
+  // ドロップゾーン判定
+  const dz = dropZone.getBoundingClientRect();
+  const over = t.clientX>=dz.left && t.clientX<=dz.right && t.clientY>=dz.top && t.clientY<=dz.bottom;
+  dropZone.classList.toggle('over', over);
+}, {passive:false});
+
+card.addEventListener('touchend', e=>{
+  addLog('touchend fires', '#e67e22');
+  ghost.style.display = 'none';
+  dropZone.classList.remove('over');
+  if(!dragging){ addLog('dragging=false スキップ','#e74c3c'); return; }
+  dragging = false;
+  const t = e.changedTouches[0];
+  const dz = dropZone.getBoundingClientRect();
+  const hit = t.clientX>=dz.left && t.clientX<=dz.right && t.clientY>=dz.top && t.clientY<=dz.bottom;
+  if(hit){
+    result.textContent = '✅ ドロップ成功！召喚できます';
+    addLog('ドロップ成功 ✅','#2ecc71');
+  } else {
+    result.textContent = '⚠️ ゾーン外';
+    addLog('ゾーン外 x:'+Math.round(t.clientX)+' y:'+Math.round(t.clientY),'#e74c3c');
+  }
+});
+
+// マウス（PC確認用）
+card.addEventListener('mousedown', e=>{
+  addLog('mousedown fires', '#9b59b6');
+  dragging=true;
+  ghost.style.display='block';
+  ghost.style.left=e.clientX+'px'; ghost.style.top=e.clientY+'px';
+});
+window.addEventListener('mousemove', e=>{
+  if(!dragging) return;
+  ghost.style.left=e.clientX+'px'; ghost.style.top=e.clientY+'px';
+});
+window.addEventListener('mouseup', e=>{
+  if(!dragging) return;
+  ghost.style.display='none'; dragging=false;
+  const dz=dropZone.getBoundingClientRect();
+  const hit=e.clientX>=dz.left&&e.clientX<=dz.right&&e.clientY>=dz.top&&e.clientY<=dz.bottom;
+  result.textContent = hit?'✅ ドロップ成功！':'⚠️ ゾーン外';
+  addLog(hit?'mouseup 成功':'mouseup ゾーン外', hit?'#2ecc71':'#e74c3c');
+});
+
+addLog('ページ読み込み完了 UA:'+navigator.userAgent.substring(0,60), '#aaa');
+</script>
+</body>
+</html>
