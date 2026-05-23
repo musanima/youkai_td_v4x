@@ -121,6 +121,22 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
 #lane-ind{position:fixed;pointer-events:none;display:none;z-index:998;font-size:9px;color:rgba(120,255,120,0.9);background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:4px;transform:translateX(-50%);}
 .auto-btn{padding:4px 10px;border:1px solid rgba(36,113,163,0.6);border-radius:6px;background:rgba(36,113,163,0.15);color:#5dade2;font-size:11px;font-family:inherit;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
 .auto-btn.on{background:rgba(36,200,100,0.2);border-color:rgba(36,200,100,0.7);color:#2ecc71;box-shadow:0 0 6px rgba(36,200,100,0.35);}
+/* Wave間バナー */
+#wave-break-banner{display:none;position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);z-index:20;flex-direction:column;align-items:center;gap:10px;pointer-events:none;}
+#wave-break-banner.show{display:flex;pointer-events:all;}
+.wbb-title{font-size:20px;font-weight:700;color:#ffd740;text-shadow:0 0 16px rgba(255,215,64,0.7);letter-spacing:2px;}
+.wbb-sub{font-size:12px;color:#aaa;}
+.wbb-ok{padding:12px 32px;border:none;border-radius:10px;background:linear-gradient(135deg,#1a6b3a,#27ae60);color:#fff;font-size:16px;font-family:inherit;cursor:pointer;touch-action:manipulation;pointer-events:all;letter-spacing:1px;box-shadow:0 4px 16px rgba(39,174,96,0.4);}
+.wbb-ok:active{transform:scale(0.97);}
+.wbb-abort{padding:8px 20px;border:1px solid rgba(231,76,60,0.5);border-radius:8px;background:rgba(231,76,60,0.12);color:#e74c3c;font-size:12px;font-family:inherit;cursor:pointer;touch-action:manipulation;pointer-events:all;}
+.wbb-abort:active{background:rgba(231,76,60,0.3);}
+/* 倍速ボタン */
+.speed-btn{padding:4px 8px;border:1px solid rgba(255,215,64,0.4);border-radius:6px;background:rgba(255,215,64,0.08);color:rgba(255,215,64,0.6);font-size:11px;font-family:inherit;cursor:pointer;transition:all 0.15s;white-space:nowrap;touch-action:manipulation;}
+.speed-btn.on{background:rgba(255,215,64,0.22);border-color:rgba(255,215,64,0.8);color:#ffd740;box-shadow:0 0 6px rgba(255,215,64,0.4);}
+.speed-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.speed-panel-title{font-size:13px;color:#fff;font-weight:700;margin-bottom:4px;}
+.speed-panel-desc{font-size:10px;color:#aaa;margin-bottom:8px;line-height:1.5;}
+.disabled-btn{opacity:0.35;cursor:not-allowed;}
 /* ===== 育成画面 ===== */
 #training-screen{background:#0d0d1a;}
 #training-screen .scr-header{padding:10px 14px;background:rgba(0,0,0,0.45);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:8px;flex-shrink:0;}
@@ -190,11 +206,19 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
     <div class="hc gem-hud">💎<b id="hud-gem">0</b><span class="gem-progress" id="gem-prog"></span></div>
     <div class="hc" id="ehp-wrap">🏯 <b id="hud-ehp">3000</b></div>
     <div class="hc" id="boss-wrap" style="display:none">👹 <b id="boss-hp-hud">-</b></div>
-    <button id="abort-btn" onclick="abortGame()" style="margin-left:auto;padding:2px 9px;border:1px solid rgba(231,76,60,0.6);border-radius:5px;background:rgba(231,76,60,0.2);color:#e74c3c;font-size:10px;font-family:inherit;cursor:pointer;touch-action:auto;pointer-events:all;flex-shrink:0;-webkit-tap-highlight-color:rgba(231,76,60,0.3);">⏹ 中断</button>
+    <button class="speed-btn" id="speed-btn" onclick="toggleSpeed()" title="倍速（課金機能）">⚡2x</button>
+    <button id="abort-btn" onclick="abortGame()" style="margin-left:4px;padding:2px 9px;border:1px solid rgba(231,76,60,0.6);border-radius:5px;background:rgba(231,76,60,0.2);color:#e74c3c;font-size:10px;font-family:inherit;cursor:pointer;touch-action:auto;pointer-events:all;flex-shrink:0;-webkit-tap-highlight-color:rgba(231,76,60,0.3);">⏹ 中断</button>
   </div>
   <div id="canvas-wrap">
     <canvas id="gc"></canvas>
     <div id="ult-overlay"><div class="ult-text" id="ult-text"></div></div>
+    <div id="top-notify" style="display:none;position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(20,20,50,0.92);border:1px solid rgba(120,120,255,0.5);border-radius:8px;padding:5px 14px;font-size:11px;color:#aabbff;white-space:nowrap;z-index:25;pointer-events:none;"></div>
+    <div id="wave-break-banner">
+      <div class="wbb-title" id="wbb-title">Wave 1 クリア！</div>
+      <div class="wbb-sub" id="wbb-sub">次のWaveの準備ができたら</div>
+      <button class="wbb-ok" onclick="resumeFromBreak()">▶ 準備OK！次のWaveへ</button>
+      <button class="wbb-abort" onclick="abortFromBreak()">⏸ ここで中断する</button>
+    </div>
   </div>
   <div id="bottom-hud">
     <div class="castle-bar">
@@ -228,8 +252,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
   </div>
   <div id="training-list"></div>
   <div id="training-footer">
-    <button class="train-footer-btn danger" onclick="confirmReset()">🔄 レベルリセット</button>
-    <button class="train-footer-btn primary" onclick="showFormation()">編成へ ▶</button>
+    <div id="speed-panel" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:10px 12px;margin-bottom:6px;text-align:center;"></div>
+    <div style="display:flex;gap:8px;width:100%;">
+      <button class="train-footer-btn danger" onclick="confirmReset()" style="flex:1;">🔄 レベルリセット</button>
+      <button class="train-footer-btn primary" onclick="showFormation()" style="flex:1;">編成へ ▶</button>
+    </div>
   </div>
 </div>
 
@@ -367,7 +394,8 @@ const LAST_WAVE=10;
 // ========== ゲームデータ ==========
 let gd = {
   stage:1, run:1,
-  chars: CHAR_DEFS.map(c=>({id:c.id, lv:1, hasUlt:false}))
+  chars: CHAR_DEFS.map(c=>({id:c.id, lv:1, hasUlt:false})),
+  clearedWave: 0, // 突破済み最大Wave数（倍速の対象）
 };
 let deployedIds=[];
 
@@ -444,15 +472,19 @@ function buildUpgradePool(){
     apply:(g)=>{ g.myMaxHp=Math.round(g.myMaxHp*1.1); }});
   pool.push({icon:'💚',name:'城壁耐久10%回復',desc:'自城HPを最大値の10%回復',
     apply:(g)=>{ g.myHp=Math.min(g.myMaxHp,g.myHp+Math.round(g.myMaxHp*0.1)); }});
+  // 霊玉10%入手（sessionGemsには加算しない＝強化トリガーの対象外）
+  const gemBonus10=Math.floor(sessionGems*0.1);
+  if(gemBonus10>0){
+    pool.push({icon:'💎',name:'霊玉10%入手',desc:`現在の所持霊玉の10%を獲得（+${gemBonus10}個）\n強化トリガーには加算されません`,
+      apply:()=>{ addTotalGems(gemBonus10); G.stageGems=(G.stageGems||0)+gemBonus10; }});
+  }
   // キャラ強化（出撃中の5体）
   deployedIds.forEach(id=>{
     const def=gc_def(id), dat=gc_data(id);
+    // 上限未達のキャラのみプールに追加（上限到達は除外）
     if(dat.lv<def.lvLimit){
       pool.push({icon:def.emoji, name:`${def.name} 強化`, desc:`${def.name} Lv${dat.lv}→Lv${dat.lv+1}\nHP・攻撃力+14%（上限Lv${def.lvLimit}）`,
         apply:(g)=>{ dat.lv=Math.min(dat.lv+1,def.lvLimit); }});
-    }else{
-      pool.push({icon:def.emoji, name:`${def.name} 強化MAX`, desc:`${def.name}はすでに上限Lvです\n次の召喚から強化済みステータスが反映`,
-        apply:(g)=>{}});
     }
   });
   // 必殺技付与（出撃中）
@@ -657,9 +689,44 @@ function setupCardEvents(card,id){
   card.addEventListener('touchcancel',onTouchEnd,   {passive:true});
 
   // マウス用（PC）
+  let mouseLongTimer=null;
+  let mouseDidLongPress=false;
+
   card.addEventListener('mousedown', e=>{
-    if(!G||G.gameOver||G.cdTimers[id]>0||G.fieldCount[id]>=gc_def(id).maxField) return;
+    if(!G||G.gameOver) return;
+    mouseDidLongPress=false;
+
+    // 必殺技が使える場合は長押し判定
+    if(G.ultReady&&G.ultReady[id]){
+      card.classList.add('pressing');
+      mouseLongTimer=setTimeout(()=>{
+        mouseLongTimer=null;
+        mouseDidLongPress=true;
+        card.classList.remove('pressing');
+        fireUlt(id);
+      }, LONG_PRESS_MS);
+      return; // mouseup で判断
+    }
+    // 必殺技なし → 即ドラッグ
+    if(G.cdTimers[id]>0||G.fieldCount[id]>=gc_def(id).maxField) return;
     startDrag(e);
+  });
+
+  card.addEventListener('mouseup', e=>{
+    if(mouseLongTimer){ clearTimeout(mouseLongTimer); mouseLongTimer=null; }
+    card.classList.remove('pressing');
+    // 長押し未発動 かつ 必殺技なし → ドラッグ開始（mousedownで開始済みの場合はonEndで処理）
+    if(mouseDidLongPress){ mouseDidLongPress=false; }
+  });
+
+  card.addEventListener('mouseleave', e=>{
+    // マウスがカードから出たら長押しキャンセル → ドラッグに移行
+    if(mouseLongTimer){
+      clearTimeout(mouseLongTimer); mouseLongTimer=null;
+      card.classList.remove('pressing');
+      if(!G||G.gameOver||G.cdTimers[id]>0||G.fieldCount[id]>=gc_def(id).maxField) return;
+      startDrag(e);
+    }
   });
 }
 
@@ -683,6 +750,8 @@ function onMove(e){
 function onEnd(e){
   if(!dragging)return;
   ghost.style.display='none'; laneInd.style.display='none';
+  // 強化パネル・Wave間バナー表示中はキャンセル
+  if(G && G.paused){ dragging=null; dragId=null; dragLane=-1; return; }
   const p=e.changedTouches?{x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY}:{x:e.clientX,y:e.clientY};
   const r=cv.getBoundingClientRect();
   const cp=c2cv(p.x,p.y);
@@ -753,7 +822,18 @@ function triggerBossIntro(def){
 // ---- 当たり判定 ----
 function occupiedLanes(u){const a=[];for(let i=0;i<u.laneSize;i++){const l=u.lane+i;if(l>=0&&l<LANES)a.push(l);}return a;}
 function lanesOverlap(a,b){return occupiedLanes(a).some(l=>occupiedLanes(b).includes(l));}
-function nearestInRange(u,list){let best=null,bd=Infinity;for(const t of list){if(!lanesOverlap(u,t))continue;const d=Math.abs(u.y-t.y);if(d<bd){bd=d;best=t;}}return best&&bd<=u.range?best:null;}
+function nearestInRange(u,list){
+  let best=null,bd=Infinity;
+  for(const t of list){
+    if(!lanesOverlap(u,t)) continue;
+    // 味方は上端・敵は下端を基準に距離計算
+    const uy = u.isEnemy ? u.y+uFS(u)*0.5 : u.y-uFS(u)*0.5; // 味方上端 or 敵下端
+    const ty = t.isEnemy ? t.y+uFS(t)*0.5 : t.y-uFS(t)*0.5;
+    const d = Math.abs(uy-ty);
+    if(d<bd){bd=d;best=t;}
+  }
+  return best&&bd<=u.range?best:null;
+}
 function blockedByBoss(a){const boss=G.enemies.find(e=>e.isBoss);if(!boss||!lanesOverlap(a,boss))return false;return boss.y<a.y&&(a.y-boss.y)<uFS({laneSize:boss.laneSize})*0.85;}
 
 function addBullet(from,to,dmg,emoji,isArea){G.bullets.push({x:uCX(from),y:from.y-8,tx:uCX(to),ty:to.y,targetUid:to.uid,dmg,emoji,spd:6,isArea,areaR:LW()*1.4,isEnemy:from.isEnemy,lane:from.lane,laneSize:from.laneSize,done:false});}
@@ -884,12 +964,22 @@ function update(){
       }
     }else{
       if(!G.infiniteWave){
-        const dy=EN_Y()+50-u.y;
+        const dy=EN_Y()+20-u.y;
         const bossAliveNow=G.enemies.some(e=>e.isBoss);
-        // ボス生存中は城壁を攻撃しない（ボスに集中）
-        if(!bossAliveNow && Math.abs(dy)<=u.range+20){u.at++;if(u.at>=u.atkSpd){u.at=0;G.enCastleHp-=u.atk;addParticles(uCX(u),EN_Y(),'#ffd740',5);}}
-        else if(!blockedByBoss(u)){u.y-=u.spd*spdM;if(u.y<EN_Y()+40)u.y=EN_Y()+40;}
-      }else if(!blockedByBoss(u)){u.y-=u.spd*spdM;if(u.y<EN_Y()+40)u.y=EN_Y()+40;}
+        // ボス未出現時は城壁をHP1で止める（ボスを強制出現させる）
+        // ボス撃破後(bossSpawned=true,bossAlive=false)は城壁攻撃OK
+        // 城壁攻撃: ボス生存中のみ禁止
+        // ボス未出現時はHP1に固定（攻撃・移動は通常通り、HPだけ1から減らない）
+        const bossNotYet=!G.bossSpawned&&!G.bossAlive;
+        if(!bossAliveNow && Math.abs(dy)<=u.range+20){
+          u.at++;if(u.at>=u.atkSpd){u.at=0;
+            G.enCastleHp-=u.atk;
+            if(bossNotYet && G.enCastleHp<=0) G.enCastleHp=1; // 0以下になる場合のみHP1で止める
+            addParticles(uCX(u),EN_Y(),'#ffd740',5);
+          }
+        }
+        else if(!blockedByBoss(u)){u.y-=u.spd*spdM;if(u.y<EN_Y()+10)u.y=EN_Y()+10;}
+      }else if(!blockedByBoss(u)){u.y-=u.spd*spdM;if(u.y<EN_Y()+10)u.y=EN_Y()+10;}
     }
   }
 
@@ -948,20 +1038,27 @@ function update(){
   // WAVE遷移（強化パネルが開いている間はスキップ）
   if(!G.infiniteWave&&G.enCastleHp<=0&&!G.gameOver&&!G.paused){
     if(G.wave<LAST_WAVE){
+      const clearedWave = G.wave; // クリアしたWave番号を保存
+      // 突破済みWaveを更新（次回出撃の倍速対象になる）
+      if(clearedWave > (gd.clearedWave||0)) gd.clearedWave = clearedWave;
       G.wave++;
       const sc=1+(gd.stage-1)*0.35+(gd.run-1)*0.6;
       G.enCastleHp=Math.round(EN_CASTLE_BASE[Math.min(G.wave-1,EN_CASTLE_BASE.length-1)]*sc*(1+(G.wave-1)*0.3));
       G.enCastleMaxHp=G.enCastleHp;
       G.bossSpawned=false;G.bossAlive=false;G.enemies=[];G.bullets=[];
+      // Wave遷移時: 全味方を自城ライン上に戻す
+      G.allies.forEach(a=>{ a.y=MY_Y()-26; a.at=0; a.kbVY=0; });
       G.normalSpawnInterval=70;G.normalSpawnTimer=100;
       document.getElementById('boss-wrap').style.display='none';
       document.getElementById('ehp-wrap').style.display='';
+      // Wave間バナーを表示（自動モードでは短縮）
+      if(!autoMode) showWaveBreakBanner(clearedWave);
+      // 倍速の適用状態を更新（突破済みWaveを超えたら通常速度へ）
+      autoApplySpeed();
     }else{
-      G.infiniteWave=true;G.bossSpawned=false;G.bossAlive=false;G.nextBossKillThreshold=0;
-      G.normalSpawnInterval=60;G.normalSpawnTimer=50;G.infiniteSurviveTimer=0;
-      document.getElementById('ehp-wrap').style.display='none';
-      G.bossIntro={active:true,text:'🔥 最終夜 — 30秒耐え切れ！',timer:200};
-      G.screenShake.dur=25;
+      // Wave10（最終Wave）クリア → 即ステージクリア
+      if(LAST_WAVE > (gd.clearedWave||0)) gd.clearedWave = LAST_WAVE;
+      G.gameOver=true; G.gameWin=true; showResult(true);
     }
   }
   if(G.myHp<=0&&!G.gameOver){G.gameOver=true;showResult(false);}
@@ -1030,13 +1127,34 @@ function draw(){
   // HP bar描画
   function drawHP(u){
     const w=uW(u)-5,h=u.isBoss?6:u.laneSize>=2?4:3;
-    const bx=uCX(u)-w/2,by=u.y-uFS(u)*0.7-h-1;
+    const fs=uFS(u);
+    // HPバーY位置:
+    //   敵ボス   → 敵城壁の直下に固定（EN_Y()+30付近）
+    //   敵通常   → キャラ下（fs*0.58）
+    //   味方2列  → キャラ上（fs*0.9）
+    //   味方1列  → キャラ上（fs*0.7）
+    let by;
+    if(u.isEnemy){
+      by = u.isBoss ? u.y+fs*0.35 : u.y+fs*0.58; // ボス: 紫枠の下辺
+    } else {
+      by = u.laneSize>=2 ? u.y-fs*0.9-h : u.y-fs*0.7-h-1;
+    }
+    const bx=uCX(u)-w/2;
     ctx2.fillStyle='rgba(0,0,0,0.5)';ctx2.fillRect(bx,by,w,h);
     const r2=Math.max(0,u.hp/u.maxHp);
-    ctx2.fillStyle=u.invincible>0?'#88ddff':r2>0.5?'#2ecc71':r2>0.25?'#f39c12':'#e74c3c';ctx2.fillRect(bx,by,w*r2,h);
-    if(u.isBoss||u.laneSize>=2){ctx2.font='7px sans-serif';ctx2.fillStyle='#ffd740';ctx2.textAlign='center';ctx2.textBaseline='alphabetic';ctx2.fillText(u.name||'',uCX(u),by-1);}
+    if(u.isEnemy){
+      ctx2.fillStyle=u.invincible>0?'#88ddff':r2>0.5?'#7d3c98':r2>0.25?'#5b2c6f':'#4a235a';
+    }else{
+      ctx2.fillStyle=u.invincible>0?'#88ddff':r2>0.5?'#2ecc71':r2>0.25?'#f39c12':'#e74c3c';
+    }
+    ctx2.fillRect(bx,by,w*r2,h);
+    if(u.isBoss||u.laneSize>=2){
+      ctx2.font='7px sans-serif';ctx2.fillStyle='#ffd740';ctx2.textAlign='center';
+      ctx2.textBaseline=u.isEnemy?'top':'alphabetic';
+      ctx2.fillText(u.name||'',uCX(u),u.isEnemy?by+h+1:by-1);
+    }
     // 凍結表示
-    if(u.frozen>0){ctx2.font='9px serif';ctx2.textBaseline='middle';ctx2.fillText('❄️',uCX(u),u.y-uFS(u)*0.85);}
+    if(u.frozen>0){ctx2.font='9px serif';ctx2.textBaseline='middle';ctx2.fillText('❄️',uCX(u),u.y-fs*0.85);}
   }
 
   // 味方
@@ -1053,12 +1171,24 @@ function draw(){
   ctx2.restore();
 }
 
-function loop(){update();draw();if(G&&!G.gameOver)rid=requestAnimationFrame(loop);}
+function loop(){
+  // 倍速モード時は update を2回呼ぶ（描画は1回）
+  const spd = gameSpeed();
+  for(let i=0;i<spd;i++){
+    if(!G||G.gameOver||G.paused) break;
+    update();
+  }
+  draw();
+  if(G&&!G.gameOver) rid=requestAnimationFrame(loop);
+}
 
 function startGame(){
   resizeCanvas();
   showScreen('game-screen');
   updateAutoBtn();
+  // 倍速: speedUnlocked が true なら出撃時に突破済みWaveを自動で倍速適用
+  autoApplySpeed();
+  updateSpeedBtn();
   setTimeout(()=>{
     resizeCanvas();
     initG();
@@ -1087,6 +1217,9 @@ function resizeCanvas(){
 function showResult(win){
   if(rid) cancelAnimationFrame(rid);
   setAutoMode(false); // リザルト画面に入ったら自動を解除
+  // 倍速をリセット（次の育成画面で再購入させる）
+  speedUnlocked = false;
+  setSpeedMode(false);
   document.getElementById('res-emoji').textContent=win?'🎉':'💀';
   document.getElementById('res-title').textContent=win?'ステージクリア！':'お社が滅んだ…';
   document.getElementById('res-title').style.color=win?'#ffd740':'#e74c3c';
@@ -1154,6 +1287,7 @@ function saveGameState(){
     // 必殺技のready状態
     ultReady: {...G.ultReady},
     // CDタイマー（リセットして召喚可能にする）
+    bossDefeated: !G.bossAlive && G.bossSpawned,
     savedAt: Date.now(),
   };
   localStorage.setItem(SAVE_KEY_GAME, JSON.stringify(save));
@@ -1225,8 +1359,8 @@ function resumeGame(){
     G.enCastleMaxHp= save.enCastleMaxHp;
     G.infiniteWave = save.infiniteWave;
     G.stageGems    = save.stageGems;
-    G.bossSpawned  = false; // ボスは再スポーンから
-    G.bossAlive    = false;
+    G.bossSpawned  = save.bossDefeated ? true  : false;
+    G.bossAlive    = save.bossDefeated ? false : false;
     // ultReady を復元
     Object.assign(G.ultReady, save.ultReady||{});
 
@@ -1302,6 +1436,7 @@ function applyBaseLevels(){
 // ---- 育成画面表示 ----
 function showTraining(){
   renderTrainingList();
+  renderSpeedPanel();
   showScreen('training-screen');
 }
 
@@ -1372,6 +1507,138 @@ function confirmReset(){
     const ts = document.getElementById('training-screen');
     if(ts && ts.classList.contains('active')) renderTrainingList();
   }
+}
+
+
+// ========== 倍速システム ==========
+// 育成画面で霊玉500を消費して取得（毎回1回のみ）
+// 取得したセッション中のみ有効。突破済みWave(gd.clearedWave)まで自動で2倍速
+
+const SPEED_COST = 500; // 倍速購入コスト
+
+let speedMode = false; // 倍速ON/OFF（ゲーム中にトグル可能）
+let speedUnlocked = false; // 今回の育成で倍速を取得済みか
+
+// 育成画面で倍速を購入
+function buySpeed(){
+  if(speedUnlocked){ alert('今回の育成では倍速は取得済みです'); return; }
+  const gems = loadTotalGems();
+  if(gems < SPEED_COST){ alert(`霊玉が足りません（必要: ${SPEED_COST}、所持: ${gems}）`); return; }
+  if(!confirm(`霊玉${SPEED_COST}を消費して倍速を取得しますか？ 次回出撃から突破済みWaveを2倍速で進行します`)) return;
+  saveTotalGems(gems - SPEED_COST);
+  speedUnlocked = true;
+  renderSpeedPanel();
+  renderTrainingList(); // 霊玉表示を更新
+}
+
+// 倍速パネルの描画（育成画面内）
+function renderSpeedPanel(){
+  const panel = document.getElementById('speed-panel');
+  if(!panel) return;
+  const gems = loadTotalGems();
+  const cleared = gd.clearedWave || 0;
+  if(speedUnlocked){
+    panel.innerHTML = `<div class="speed-panel-title">⚡ 倍速 取得済み！</div>
+      <div class="speed-panel-desc">${cleared>0?`次の出撃でWave${cleared}まで2倍速で進行します`:"出撃してWaveを突破すると次回から倍速が適用されます"}</div>`;
+    panel.style.borderColor = 'rgba(255,215,64,0.5)';
+  } else {
+    panel.innerHTML = `<div class="speed-panel-title">⚡ 倍速チケット</div>
+      <div class="speed-panel-desc">突破済みWave(${cleared})まで2倍速で進行<br>効果: 次回出撃のみ有効</div>
+      <button class="train-btn ${gems>=SPEED_COST?'':'disabled-btn'}" onclick="buySpeed()" ${gems<SPEED_COST?'disabled':''}>
+        💎${SPEED_COST} 霊玉で取得
+      </button>`;
+    panel.style.borderColor = 'rgba(255,255,255,0.09)';
+  }
+}
+
+function toggleSpeed(){
+  if(!speedUnlocked){
+    showTopNotify('⚡ 次の育成画面で購入できます。');
+    return;
+  }
+  setSpeedMode(!speedMode);
+}
+let topNotifyTimer=null;
+function showTopNotify(msg){
+  const el=document.getElementById('top-notify');
+  if(!el) return;
+  el.textContent=msg;
+  el.style.display='block';
+  if(topNotifyTimer) clearTimeout(topNotifyTimer);
+  topNotifyTimer=setTimeout(()=>{ el.style.display='none'; },2500);
+}
+function setSpeedMode(val){
+  speedMode = val;
+  updateSpeedBtn();
+}
+function updateSpeedBtn(){
+  const btn = document.getElementById('speed-btn');
+  if(!btn) return;
+  if(!speedUnlocked){
+    btn.textContent = '⚡ 2x';
+    btn.classList.remove('on');
+    btn.style.opacity = '0.35';
+    btn.title = '育成画面で取得できます';
+    return;
+  }
+  btn.classList.toggle('on', speedMode);
+  btn.textContent = speedMode ? '⚡ ON' : '⚡ 2x';
+  btn.style.opacity = '1';
+  btn.title = '倍速ON/OFF';
+}
+
+// 現在のWaveが突破済みかチェックして自動で倍速を適用
+function autoApplySpeed(){
+  if(!speedUnlocked) return;
+  const cleared = gd.clearedWave || 0;
+  if(G && G.wave <= cleared && !G.infiniteWave){
+    setSpeedMode(true);
+  } else {
+    setSpeedMode(false);
+  }
+}
+
+// ゲームの速度倍率を返す
+function gameSpeed(){ return (speedMode && speedUnlocked) ? 2 : 1; }
+
+// ========== Wave間中断バナー ==========
+let waveBreakTimer = null;
+let waveBreakRemain = 0;
+
+function showWaveBreakBanner(waveNum){
+  const banner = document.getElementById('wave-break-banner');
+  const title  = document.getElementById('wbb-title');
+  if(!banner) return;
+  title.textContent = `Wave ${waveNum} クリア！`;
+  banner.classList.add('show');
+  // ゲームを一時停止して「準備OK」待ち
+  if(G) G.paused = true;
+}
+
+// 「準備OK」ボタン押下 → 次Wave開始
+function resumeFromBreak(){
+  hideWaveBreakBanner();
+  if(G){ G.paused = false; }
+}
+
+function hideWaveBreakBanner(){
+  if(waveBreakTimer){ clearInterval(waveBreakTimer); waveBreakTimer=null; }
+  const banner = document.getElementById('wave-break-banner');
+  if(banner) banner.classList.remove('show');
+  if(G && G.paused) G.paused = false;
+}
+
+// Wave間バナーの「ここで中断する」ボタン
+function abortFromBreak(){
+  hideWaveBreakBanner();
+  // セーブしてタイトルへ
+  saveGameState();
+  if(G){ G.gameOver=true; G.paused=false; }
+  if(rid){ cancelAnimationFrame(rid); rid=null; }
+  setAutoMode(false);
+  document.getElementById('upgrade-panel').classList.remove('show');
+  updateContinueBtn();
+  showScreen('title-screen');
 }
 
 const LAST_WAVE_CONST=3;
@@ -1550,7 +1817,11 @@ function autoThink(){
         // 通常: 各キャラ最低1体は維持、空きレーンを埋める
         if(G.fieldCount[id]===0){
           spawn=true;
-          tLane=leastCoveredLane(def.laneSize);
+          // 初回はキャラ順でレーンを分散
+          const idxInDeploy=deployedIds.indexOf(id);
+          const denom=Math.max(1,deployedIds.length-1);
+          const baseL=Math.round((idxInDeploy/denom)*(LANES-def.laneSize));
+          tLane=Math.max(0,Math.min(LANES-def.laneSize,baseL));
         } else if(isSpeed && G.fieldCount[id]<2){
           // 速い妖怪（偵察役）は2体まで常に維持
           spawn=true;
