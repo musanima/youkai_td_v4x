@@ -385,36 +385,36 @@ const ENEMY_DEFS=[
 ];
 const BOSS_DEFS=[
   {emoji:'🐲',name:'大妖龍',  hp:5000, atk:130,spd:0.2, range:85, atkSpd:110,laneSize:5,atkType:'area',col:'#8e44ad',kbForce:300,introText:'⚠️ 大妖龍 降臨！',
-   // 出現時演出
+   // 出現時: ノックバック300 + ATK100%ダメージ
    intro:{
      exec:(G,def)=>{
-       G.allies.forEach(a=>{ a.kbVY=def.kbForce*0.1; a.at=0; }); // ノックバック
-       G.allies.forEach(a=>{ if(!a.invincible){ a.hp-=def.atk; addParticles(uCX(a),a.y,'#e74c3c',6,true); }}); // 攻撃力100%ダメージ
+       G.allies.forEach(a=>{ a.kbVY=300*0.1; a.at=0; });
+       G.allies.forEach(a=>{ if(!a.invincible){ a.hp-=def.atk; addParticles(uCX(a),a.y,'#e74c3c',6,true); }});
      }},
-   // 咆哮
+   // 咆哮: 30秒毎、全体ノックバック100
    roar:{interval:1800, text:'🐲 咆哮！',
      exec:(G,boss)=>{
-       G.allies.forEach(a=>{ a.kbVY=10; a.at=0; });
+       G.allies.forEach(a=>{ a.kbVY=100*0.1; a.at=0; });
      }}},
   {emoji:'👺',name:'大天魔王',hp:10000,atk:200,spd:0.16,range:95, atkSpd:120,laneSize:5,atkType:'area',col:'#c0392b',kbForce:300,introText:'⚠️ 大天魔王 現る！',
    intro:{
      exec:(G,def)=>{
-       G.allies.forEach(a=>{ a.kbVY=def.kbForce*0.1; a.at=0; });
-       G.allies.forEach(a=>{ if(!a.invincible){ a.hp-=Math.round(def.atk*1.5); addParticles(uCX(a),a.y,'#e74c3c',8,true); }}); // 攻撃力150%ダメージ
+       G.allies.forEach(a=>{ a.kbVY=300*0.1; a.at=0; });
+       G.allies.forEach(a=>{ if(!a.invincible){ a.hp-=def.atk; addParticles(uCX(a),a.y,'#e74c3c',6,true); }});
      }},
-   roar:{interval:1500, text:'👺 魔王の咆哮！',
+   roar:{interval:1800, text:'👺 咆哮！',
      exec:(G,boss)=>{
-       G.allies.forEach(a=>{ a.kbVY=15; a.at=0; if(!a.invincible) a.hp-=Math.round(a.maxHp*0.1); });
+       G.allies.forEach(a=>{ a.kbVY=100*0.1; a.at=0; });
      }}},
   {emoji:'☠️',name:'冥府の王',hp:18000,atk:280,spd:0.12,range:105,atkSpd:130,laneSize:5,atkType:'area',col:'#2c3e50',kbForce:300,introText:'⚠️ 冥府の王 降臨！！',
    intro:{
      exec:(G,def)=>{
-       G.allies.forEach(a=>{ a.kbVY=def.kbForce*0.1; a.at=0; });
-       G.allies.forEach(a=>{ if(!a.invincible){ a.hp-=Math.round(def.atk*2); addParticles(uCX(a),a.y,'#e74c3c',10,true); }}); // 攻撃力200%ダメージ
+       G.allies.forEach(a=>{ a.kbVY=300*0.1; a.at=0; });
+       G.allies.forEach(a=>{ if(!a.invincible){ a.hp-=def.atk; addParticles(uCX(a),a.y,'#e74c3c',6,true); }});
      }},
-   roar:{interval:1200, text:'☠️ 冥府の怒り！',
+   roar:{interval:1800, text:'☠️ 咆哮！',
      exec:(G,boss)=>{
-       G.allies.forEach(a=>{ a.kbVY=20; a.at=0; if(!a.invincible) a.hp-=Math.round(a.maxHp*0.15); });
+       G.allies.forEach(a=>{ a.kbVY=100*0.1; a.at=0; });
      }}},
 ];
 const EN_CASTLE_BASE=[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000];
