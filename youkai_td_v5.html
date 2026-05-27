@@ -1505,7 +1505,13 @@ function update(){
       }
     }
   }
-  if(G.myHp<=0&&!G.gameOver){G.gameOver=true;showResult(false);}
+  if(G.myHp<=0&&!G.gameOver){
+    if(exchContinue&&!contUsed){
+      if(!showContinuePopup()){ G.gameOver=true; showResult(false); }
+    } else {
+      G.gameOver=true; showResult(false);
+    }
+  }
   // 自動モード思考
   if(autoMode){autoTimer++;if(autoTimer>=AUTO_INTERVAL){autoTimer=0;autoThink();}}
   updateHUD();
