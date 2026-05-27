@@ -1,0 +1,2342 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>百鬼夜行 — 妖怪ローグライクTD</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#111;display:flex;justify-content:center;font-family:'Noto Serif JP',serif;touch-action:pan-y;user-select:none;}
+#app{width:100%;max-width:420px;background:#0a0a18;min-height:100dvh;position:relative;display:flex;flex-direction:column;touch-action:pan-y;}
+
+/* ===== SCREENS ===== */
+.screen{display:none;position:absolute;inset:0;flex-direction:column;z-index:1;}
+.screen.active{display:flex;}
+
+/* ===== TITLE ===== */
+#title-screen{background:linear-gradient(180deg,#0a0218,#1a0530 60%,#0a0a18);align-items:center;justify-content:center;gap:20px;}
+.title-deco{font-size:52px;animation:floatY 3s ease-in-out infinite;}
+@keyframes floatY{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.title-jp{font-size:30px;color:#ffd740;text-shadow:0 0 20px rgba(255,215,64,0.5);letter-spacing:8px;font-weight:700;}
+.title-sub{font-size:11px;color:rgba(255,215,64,0.45);letter-spacing:4px;}
+.title-btn{padding:13px 40px;background:linear-gradient(135deg,#8e44ad,#c0392b);border:none;border-radius:8px;color:#fff;font-size:16px;font-family:inherit;cursor:pointer;letter-spacing:2px;box-shadow:0 4px 20px rgba(192,57,43,0.4);}
+.title-btn.continue{background:linear-gradient(135deg,#1a6b3a,#27ae60);box-shadow:0 4px 20px rgba(39,174,96,0.4);animation:continuePulse 2s ease-in-out infinite;}
+@keyframes continuePulse{0%,100%{box-shadow:0 4px 20px rgba(39,174,96,0.4);}50%{box-shadow:0 4px 30px rgba(39,174,96,0.8),0 0 0 4px rgba(39,174,96,0.2);}}
+.continue-info{font-size:10px;color:rgba(46,204,113,0.7);letter-spacing:1px;margin-top:-12px;}
+.stars-bg{position:absolute;inset:0;pointer-events:none;}
+
+/* ===== FORMATION ===== */
+#formation-screen{background:#0d0d1a;}
+.scr-header{padding:10px 14px;background:rgba(0,0,0,0.45);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.scr-header h2{color:#ffd740;font-size:14px;letter-spacing:2px;}
+.scr-header .sub{color:#aaa;font-size:10px;margin-left:auto;}
+.deploy-slots{padding:8px 12px;background:rgba(0,0,0,0.3);flex-shrink:0;}
+.deploy-label{font-size:10px;color:#aaa;letter-spacing:2px;margin-bottom:5px;}
+.deploy-row{display:flex;gap:5px;}
+.deploy-slot{width:60px;height:68px;border:1.5px dashed rgba(255,255,255,0.18);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:border-color 0.15s;}
+.deploy-slot.filled{border-style:solid;border-color:rgba(255,215,64,0.45);background:rgba(255,215,64,0.04);}
+.deploy-slot .ds-emoji{font-size:22px;}
+.deploy-slot .ds-name{font-size:8px;color:#ccc;margin-top:1px;text-align:center;}
+.deploy-slot .ds-lv{position:absolute;top:2px;right:4px;font-size:8px;color:#ffd740;}
+.deploy-slot .ds-rm{position:absolute;top:2px;left:4px;font-size:10px;color:#e74c3c;display:none;cursor:pointer;}
+.deploy-slot.filled .ds-rm{display:block;}
+.char-list{flex:1;overflow-y:auto;padding:8px 10px;display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.char-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:9px;cursor:pointer;transition:all 0.12s;position:relative;}
+.char-card.selected{border-color:rgba(255,215,64,0.5);background:rgba(255,215,64,0.05);}
+.char-card.selected::after{content:'✓';position:absolute;top:6px;right:8px;color:#ffd740;font-size:11px;}
+.cc-top{display:flex;gap:7px;align-items:center;}
+.cc-emoji{font-size:26px;}
+.cc-info .cc-name{font-size:12px;color:#fff;font-weight:700;}
+.cc-info .cc-lv{font-size:10px;color:#ffd740;margin-top:2px;}
+.cc-info .cc-ult{font-size:8px;color:#aaa;margin-top:1px;}
+.cc-stats{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;}
+.stat-tag{font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.07);color:#bbb;}
+.form-footer{padding:8px 12px;background:rgba(0,0,0,0.45);border-top:1px solid rgba(255,255,255,0.07);display:flex;gap:8px;align-items:center;flex-shrink:0;}
+.stage-info-txt{flex:1;font-size:10px;color:#aaa;}
+.start-btn{padding:9px 18px;background:linear-gradient(135deg,#1a6b3a,#27ae60);border:none;border-radius:8px;color:#fff;font-size:13px;font-family:inherit;cursor:pointer;}
+.start-btn:disabled{opacity:0.35;cursor:not-allowed;}
+
+/* ===== GAME ===== */
+#game-screen{background:#0a0a18;}
+#top-hud{display:flex;gap:3px;padding:3px 6px;background:rgba(0,0,0,0.6);flex-wrap:wrap;flex-shrink:0;}
+.hc{background:rgba(255,255,255,0.08);border-radius:5px;padding:2px 6px;font-size:10px;color:#aaa;}
+.hc b{color:#fff;font-weight:700;}
+.hc.gem-hud{cursor:default;}
+.gem-progress{display:inline-block;margin-left:3px;font-size:9px;color:#ffd740;}
+#canvas-wrap{flex:1;position:relative;min-height:0;}
+canvas{display:block;width:100%;height:100%;touch-action:none;}
+#bottom-hud{padding:4px 8px 5px;background:rgba(0,0,0,0.85);border-top:2px solid rgba(255,255,255,0.15);flex-shrink:0;}
+.castle-bar{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+.castle-bar span{font-size:9px;color:#aaa;white-space:nowrap;}
+#mhp-bar{flex:1;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;}
+#mhp-fill{height:100%;background:#2ecc71;border-radius:3px;transition:width 0.1s;}
+#mhp-txt{font-size:9px;color:#fff;white-space:nowrap;}
+#unit-row{display:flex;gap:4px;justify-content:center;}
+
+/* カード */
+.ucard{position:relative;width:56px;height:64px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;touch-action:manipulation;transition:opacity 0.15s,box-shadow 0.15s;}
+.ucard.has-ult{border-color:rgba(255,215,0,0.9);box-shadow:0 0 0 2px rgba(255,215,0,0.7),0 0 16px rgba(255,200,0,0.8),0 0 30px rgba(255,150,0,0.4);animation:ultGlow 1.2s ease-in-out infinite;}
+@keyframes ultGlow{0%,100%{box-shadow:0 0 0 2px rgba(255,215,0,0.7),0 0 16px rgba(255,200,0,0.8),0 0 30px rgba(255,150,0,0.4);}50%{box-shadow:0 0 0 3px rgba(255,215,0,1),0 0 24px rgba(255,200,0,1),0 0 44px rgba(255,150,0,0.6);}}
+.ucard .ue{font-size:21px;line-height:1;}
+.ucard .un{font-size:7px;color:#ccc;margin-top:1px;text-align:center;line-height:1.2;}
+.ucard .ulv{position:absolute;bottom:2px;left:3px;font-size:7px;color:#aaa;}
+.ucard .uco{position:absolute;top:2px;right:3px;font-size:7px;color:#ffd740;}
+.ucard .ult-badge{position:absolute;bottom:2px;right:3px;font-size:9px;line-height:1;}
+.ucard .ucd{position:absolute;inset:0;background:rgba(0,0,0,0.72);border-radius:8px;display:none;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-direction:column;gap:0px;}
+.ucard .ucd .cdlb{font-size:7px;color:#aaa;}
+.ucard.pressing{transform:scale(0.93);box-shadow:0 0 12px rgba(255,200,0,0.6);}
+
+/* 必殺技エフェクト */
+#ult-overlay{position:absolute;inset:0;pointer-events:none;z-index:10;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s;}
+#ult-overlay.show{opacity:1;}
+.ult-text{font-size:22px;font-weight:700;color:#ffd740;text-shadow:0 0 20px rgba(255,215,64,0.8);letter-spacing:2px;}
+
+/* ===== 強化パネル ===== */
+#upgrade-panel{display:none;position:absolute;inset:0;background:rgba(0,0,0,0.88);z-index:30;align-items:center;justify-content:center;}
+#upgrade-panel.show{display:flex;}
+.up-box{width:88%;max-width:340px;background:#0d0d1a;border:1px solid rgba(255,215,64,0.3);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:9px;}
+.up-box h2{color:#ffd740;font-size:14px;text-align:center;letter-spacing:2px;}
+.up-box .up-info{font-size:10px;color:#aaa;text-align:center;}
+.up-choices{display:flex;flex-direction:column;gap:7px;}
+.up-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;gap:10px;align-items:center;transition:background 0.12s,border-color 0.12s;}
+.up-card:active{background:rgba(255,215,64,0.08);border-color:rgba(255,215,64,0.4);}
+.up-icon{font-size:26px;flex-shrink:0;}
+.up-txt .up-name{font-size:12px;color:#fff;font-weight:700;}
+.up-txt .up-desc{font-size:9px;color:#aaa;margin-top:2px;line-height:1.4;}
+
+/* ===== RESULT ===== */
+#result-screen{background:linear-gradient(180deg,#0a0218,#0a0a18);align-items:center;justify-content:center;z-index:40;}
+.res-box{text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;}
+.res-emoji{font-size:54px;animation:floatY 2s ease-in-out infinite;}
+.res-title{font-size:22px;font-weight:700;letter-spacing:3px;}
+.res-stats{font-size:11px;color:#aaa;line-height:1.9;}
+.res-gems{font-size:13px;color:#ffd740;}
+.res-btns{display:flex;gap:10px;margin-top:6px;}
+.res-btn{padding:10px 18px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:12px;font-family:inherit;cursor:pointer;}
+.res-btn.primary{background:linear-gradient(135deg,#8e44ad,#c0392b);border:none;}
+
+/* ===== COMMON ===== */
+#ghost{position:fixed;pointer-events:none;font-size:28px;display:none;transform:translate(-50%,-60%);z-index:999;}
+#lane-ind{position:fixed;pointer-events:none;display:none;z-index:998;font-size:9px;color:rgba(120,255,120,0.9);background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:4px;transform:translateX(-50%);}
+.auto-btn{padding:4px 10px;border:1px solid rgba(36,113,163,0.6);border-radius:6px;background:rgba(36,113,163,0.15);color:#5dade2;font-size:11px;font-family:inherit;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.auto-btn.on{background:rgba(36,200,100,0.2);border-color:rgba(36,200,100,0.7);color:#2ecc71;box-shadow:0 0 6px rgba(36,200,100,0.35);}
+/* Wave間バナー */
+#wave-break-banner{display:none;position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);z-index:20;flex-direction:column;align-items:center;gap:10px;pointer-events:none;}
+#wave-break-banner.show{display:flex;pointer-events:all;}
+.wbb-title{font-size:20px;font-weight:700;color:#ffd740;text-shadow:0 0 16px rgba(255,215,64,0.7);letter-spacing:2px;}
+.wbb-sub{font-size:12px;color:#aaa;}
+.wbb-ok{padding:12px 32px;border:none;border-radius:10px;background:linear-gradient(135deg,#1a6b3a,#27ae60);color:#fff;font-size:16px;font-family:inherit;cursor:pointer;touch-action:manipulation;pointer-events:all;letter-spacing:1px;box-shadow:0 4px 16px rgba(39,174,96,0.4);}
+.wbb-ok:active{transform:scale(0.97);}
+.wbb-abort{padding:8px 20px;border:1px solid rgba(231,76,60,0.5);border-radius:8px;background:rgba(231,76,60,0.12);color:#e74c3c;font-size:12px;font-family:inherit;cursor:pointer;touch-action:manipulation;pointer-events:all;}
+.wbb-abort:active{background:rgba(231,76,60,0.3);}
+/* 倍速ボタン */
+.speed-btn{padding:4px 8px;border:1px solid rgba(255,215,64,0.4);border-radius:6px;background:rgba(255,215,64,0.08);color:rgba(255,215,64,0.6);font-size:11px;font-family:inherit;cursor:pointer;transition:all 0.15s;white-space:nowrap;touch-action:manipulation;}
+.speed-btn.on{background:rgba(255,215,64,0.22);border-color:rgba(255,215,64,0.8);color:#ffd740;box-shadow:0 0 6px rgba(255,215,64,0.4);}
+.speed-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.speed-panel-title{font-size:13px;color:#fff;font-weight:700;margin-bottom:4px;}
+.speed-panel-desc{font-size:10px;color:#aaa;margin-bottom:8px;line-height:1.5;}
+.disabled-btn{opacity:0.35;cursor:not-allowed;}
+.exch-item{background:rgba(255,255,255,0.04);border:1px solid rgba(150,100,255,0.2);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;margin-bottom:7px;}
+.exch-item.bought{border-color:rgba(46,204,113,0.4);background:rgba(46,204,113,0.04);}
+.exch-icon{font-size:24px;flex-shrink:0;}
+.exch-info{flex:1;}
+.exch-name{font-size:12px;color:#fff;font-weight:700;}
+.exch-desc{font-size:9px;color:#aaa;margin-top:2px;line-height:1.4;}
+.exch-btn{padding:6px 12px;border:none;border-radius:7px;background:linear-gradient(135deg,#6c3483,#c0392b);color:#fff;font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0;touch-action:manipulation;}
+.exch-btn:disabled{opacity:0.35;cursor:not-allowed;background:rgba(255,255,255,0.1);}
+#continue-popup{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,10,30,0.96);border:2px solid rgba(46,204,113,0.6);border-radius:14px;padding:18px;z-index:30;text-align:center;min-width:240px;max-width:90%;}
+#continue-popup.show{display:block;}
+.cont-title{font-size:16px;font-weight:700;color:#2ecc71;margin-bottom:8px;}
+.cont-desc{font-size:10px;color:#aaa;margin-bottom:12px;line-height:1.6;}
+.cont-btn{padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#1a6b3a,#27ae60);color:#fff;font-size:14px;font-family:inherit;cursor:pointer;touch-action:manipulation;margin-right:8px;}
+.cont-decline{padding:10px 16px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#aaa;font-size:12px;font-family:inherit;cursor:pointer;touch-action:manipulation;}
+/* ===== 育成画面 ===== */
+#training-screen{background:#0d0d1a;}
+#training-screen .scr-header{padding:10px 14px;background:rgba(0,0,0,0.45);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+#training-screen .scr-header h2{color:#ffd740;font-size:14px;letter-spacing:2px;}
+#total-gems-bar{padding:8px 14px;background:rgba(255,215,64,0.07);border-bottom:1px solid rgba(255,215,64,0.15);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+#total-gems-bar .gem-label{font-size:11px;color:#aaa;}
+#total-gems-bar .gem-val{font-size:16px;color:#ffd740;font-weight:700;}
+#training-list{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:10px;}
+.train-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;}
+.train-emoji{font-size:32px;flex-shrink:0;}
+.train-info{flex:1;}
+.train-name{font-size:13px;color:#fff;font-weight:700;}
+.train-lv{font-size:11px;color:#ffd740;margin-top:2px;}
+.train-stats{font-size:10px;color:#aaa;margin-top:2px;}
+.train-cost{font-size:10px;color:#aaa;margin-top:4px;}
+.train-cost.can-afford{color:#2ecc71;}
+.train-cost.maxed{color:#888;}
+.train-btn{padding:7px 14px;border:none;border-radius:7px;background:linear-gradient(135deg,#8e44ad,#c0392b);color:#fff;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.train-btn:disabled{opacity:0.35;cursor:not-allowed;background:rgba(255,255,255,0.1);}
+.train-btn.maxed{background:rgba(255,215,64,0.15);color:#ffd740;border:1px solid rgba(255,215,64,0.3);}
+#training-footer{padding:10px 12px;background:rgba(0,0,0,0.45);border-top:1px solid rgba(255,255,255,0.07);display:flex;gap:8px;justify-content:center;flex-shrink:0;}
+.train-footer-btn{padding:9px 20px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:12px;font-family:inherit;cursor:pointer;}
+.train-footer-btn.primary{background:linear-gradient(135deg,#1a6b3a,#27ae60);border:none;}
+.train-footer-btn.danger{background:rgba(231,76,60,0.15);border-color:rgba(231,76,60,0.4);color:#e74c3c;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- TITLE -->
+<div id="title-screen" class="screen active">
+  <canvas id="stars-cv" class="stars-bg"></canvas>
+  <div class="title-deco">🌕</div>
+  <div class="title-jp">百鬼夜行</div>
+  <div class="title-sub">YOUKAI ROGUELITE TD</div>
+  <div id="continue-wrap" style="display:none;flex-direction:column;align-items:center;gap:4px;">
+    <button class="title-btn continue" onclick="resumeGame()">続きから ▶</button>
+    <div class="continue-info" id="continue-info"></div>
+  </div>
+  <button class="title-btn" onclick="showFormation()">出陣 ▶</button>
+  <button class="title-btn" style="font-size:12px;padding:8px 24px;background:rgba(231,76,60,0.3);border:1px solid rgba(231,76,60,0.5);" onclick="confirmReset()">🔄 育成データをリセット</button>
+</div>
+
+<!-- FORMATION -->
+<div id="formation-screen" class="screen">
+  <div class="scr-header">
+    <h2>⚔️ 出撃編成</h2>
+    <div class="sub" id="form-sub">5体まで選択</div>
+  </div>
+  <div class="deploy-slots">
+    <div class="deploy-label">出撃メンバー（最大5体）</div>
+    <div class="deploy-row" id="deploy-row"></div>
+  </div>
+  <div class="char-list" id="char-list"></div>
+  <div class="form-footer" style="flex-direction:column;gap:6px;">
+    <div style="display:flex;align-items:center;gap:8px;width:100%;">
+      <div class="stage-info-txt" id="stage-info-txt">第1夜</div>
+      <div style="display:flex;align-items:center;gap:4px;margin-left:auto;">
+        <span style="font-size:10px;color:#aaa;">第</span>
+        <select id="wave-select" style="padding:3px 6px;border:1px solid rgba(255,255,255,0.2);border-radius:5px;background:rgba(255,255,255,0.08);color:#fff;font-size:11px;font-family:inherit;" onchange="updateWaveSelectCost()">
+          <option value="1">1</option>
+        </select>
+        <span style="font-size:10px;color:#aaa;">夜から開始</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+      <span id="wave-skip-info" style="font-size:10px;color:#c39aff;"></span>
+      <button class="start-btn" id="start-btn" disabled onclick="startGame()">出陣！</button>
+    </div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game-screen" class="screen">
+  <div id="top-hud">
+    <div class="hc">🌙 第<b id="hud-stage">1</b>夜 W<b id="hud-wave">1</b></div>
+    <div class="hc">💀 <b id="hud-kill">0</b></div>
+    <div class="hc gem-hud">💎<b id="hud-gem">0</b><span class="gem-progress" id="gem-prog"></span></div>
+    <div class="hc" style="background:rgba(138,43,226,0.2);">✨<b id="hud-pts">0</b>pt</div>
+    <div class="hc" id="ehp-wrap">🏯 <b id="hud-ehp">3000</b></div>
+    <div class="hc" id="boss-wrap" style="display:none">👹 <b id="boss-hp-hud">-</b></div>
+    <button class="speed-btn" id="speed-btn" onclick="toggleSpeed()" title="倍速（課金機能）">⚡2x</button>
+    <button id="abort-btn" onclick="abortGame()" style="margin-left:4px;padding:2px 9px;border:1px solid rgba(231,76,60,0.6);border-radius:5px;background:rgba(231,76,60,0.2);color:#e74c3c;font-size:10px;font-family:inherit;cursor:pointer;touch-action:auto;pointer-events:all;flex-shrink:0;-webkit-tap-highlight-color:rgba(231,76,60,0.3);">⏹ 中断</button>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="gc"></canvas>
+    <div id="ult-overlay"><div class="ult-text" id="ult-text"></div></div>
+    <div id="continue-popup">
+      <div class="cont-title">🔄 コンティニュー</div>
+      <div class="cont-desc">敵を城壁まで吹き飛ばし<br>全員に必殺技付与<br>10秒間HP/ATK 100%アップ</div>
+      <button class="cont-btn" onclick="doContinue()">続ける</button>
+      <button class="cont-decline" onclick="declineContinue()">諦める</button>
+    </div>
+    <div id="top-notify" style="display:none;position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(20,20,50,0.92);border:1px solid rgba(120,120,255,0.5);border-radius:8px;padding:5px 14px;font-size:11px;color:#aabbff;white-space:nowrap;z-index:25;pointer-events:none;"></div>
+    <div id="wave-break-banner">
+      <div class="wbb-title" id="wbb-title">Wave 1 クリア！</div>
+      <div class="wbb-sub" id="wbb-sub">次のWaveの準備ができたら</div>
+      <button class="wbb-ok" onclick="resumeFromBreak()">▶ 準備OK！次のWaveへ</button>
+      <button class="wbb-abort" onclick="abortFromBreak()">⏸ ここで中断する</button>
+    </div>
+  </div>
+  <div id="bottom-hud">
+    <div style="margin-bottom:2px;"><button onclick="if(upgradePoints>0&&G&&!G.paused){G.paused=true;_openUpgradePanelPt();}" style="width:100%;padding:3px;border:1px solid rgba(138,43,226,0.5);border-radius:5px;background:rgba(138,43,226,0.15);color:#c39aff;font-size:10px;font-family:inherit;cursor:pointer;touch-action:manipulation;">✨ 強化（<span id="btn-pts">0</span>pt）</button></div>
+    <div class="castle-bar">
+      <span>⛩️ 自城</span>
+      <div id="mhp-bar"><div id="mhp-fill"></div></div>
+      <span id="mhp-txt">1000/1000</span>
+      <button class="auto-btn" id="auto-battle-btn" onclick="toggleAuto()">🤖 自動</button>
+    </div>
+    <div id="unit-row"></div>
+  </div>
+</div>
+
+<!-- 強化パネル（ゲーム上に重ねる） -->
+<div id="upgrade-panel">
+  <div class="up-box" style="max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h2>✨ 強化</h2>
+      <span style="font-size:13px;color:#ffd740;font-weight:700;">残り <b id="up-pts">0</b>pt</span>
+    </div>
+    <div class="up-info" id="up-info" style="margin-bottom:6px;"></div>
+    <div id="up-choices"></div>
+    <div id="up-char-list" style="margin-bottom:8px;"></div>
+    <div id="up-ult-list" style="margin-bottom:8px;"></div>
+    <div style="margin-top:4px;">
+      <button onclick="stockAndClose()" style="width:100%;padding:10px;border:1px solid rgba(255,215,64,0.4);border-radius:8px;background:rgba(255,215,64,0.08);color:#ffd740;font-size:13px;font-family:inherit;cursor:pointer;touch-action:manipulation;">⏸ ストック（ptを持ち越して閉じる）</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRAINING -->
+<div id="training-screen" class="screen">
+  <div class="scr-header">
+    <h2>🌱 育成</h2>
+    <span style="font-size:10px;color:#aaa;margin-left:auto;">霊玉でレベルアップ</span>
+  </div>
+  <div id="total-gems-bar">
+    <span class="gem-label">💎 所持霊玉</span>
+    <span class="gem-val" id="training-gem-val">0</span>
+  </div>
+  <div id="training-list"></div>
+  <div id="training-footer">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;margin-bottom:4px;">
+      <span style="font-size:11px;color:#aaa;">💠 所持魔石</span>
+      <span id="training-stone-val" style="font-size:16px;color:#c39aff;font-weight:700;">0</span>
+    </div>
+    <div style="display:flex;gap:8px;width:100%;">
+      <button class="train-footer-btn danger" onclick="confirmReset()" style="flex:1;">🔄 レベルリセット</button>
+      <button class="train-footer-btn primary" onclick="showExchange()" style="flex:1;">魔石交換所 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXCHANGE -->
+<div id="exchange-screen" class="screen" style="background:#0d0d1a;">
+  <div style="padding:12px 14px;max-width:420px;margin:0 auto;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <div style="font-size:20px;">💠</div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:700;color:#fff;">魔石交換所</div>
+        <div style="font-size:10px;color:#aaa;">所持魔石: <b id="exch-stones">0</b></div>
+      </div>
+      <button onclick="showFormation()" style="padding:6px 14px;border:1px solid rgba(255,255,255,0.2);border-radius:7px;background:rgba(255,255,255,0.06);color:#fff;font-size:11px;font-family:inherit;cursor:pointer;touch-action:manipulation;">編成へ ▶</button>
+    </div>
+    <div id="exch-list"></div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result-screen" class="screen">
+  <div class="res-box">
+    <div class="res-emoji" id="res-emoji">🎉</div>
+    <div class="res-title" id="res-title">勝利！</div>
+    <div class="res-stats" id="res-stats"></div>
+    <div class="res-gems" id="res-gems"></div>
+    <div class="res-btns">
+      <button class="res-btn" id="res-back-btn" onclick="showFormation()">編成に戻る</button>
+      <button class="res-btn primary" id="res-next" onclick="nextStage()">次のステージ ▶</button>
+    </div>
+  </div>
+</div>
+
+<div id="ghost"></div>
+<div id="lane-ind"></div>
+
+<script>
+'use strict';
+
+// ========== キャラ定義（8種、進化なし・Lv制のみ） ==========
+// ultSkill: 必殺技定義
+const CHAR_DEFS = [
+  { id:'kappa',  name:'河童',   emoji:'🐢', laneSize:1, atkType:'single', proj:null,
+    baseHp:200, baseAtk:18, spd:0.55, range:55,  atkSpd:62,  recast:4,  maxField:7,
+    lvLimit:5, col:'#27ae60',
+    ultSkill:{ name:'大波', emoji:'🌊', desc:'敵全体を画面下へノックバック',
+      exec:(game)=>ultKnockback(game) }},
+  { id:'tengu',  name:'天狗',   emoji:'🦅', laneSize:1, atkType:'single', proj:'🌀',
+    baseHp:110, baseAtk:30, spd:1.1,  range:120, atkSpd:45,  recast:8,  maxField:5,
+    lvLimit:5, col:'#3498db',
+    ultSkill:{ name:'嵐の加護', emoji:'💨', desc:'味方速度2倍・敵速度半減（8秒）',
+      exec:(game)=>ultSpeedChange(game) }},
+  { id:'oni',    name:'鬼',     emoji:'👹', laneSize:2, atkType:'area',   proj:null,
+    baseHp:700, baseAtk:45, spd:0.35, range:65,  atkSpd:90,  recast:14, maxField:2,
+    lvLimit:5, col:'#e74c3c',
+    ultSkill:{ name:'業炎', emoji:'🔥', desc:'敵全体に現在HPの30%ダメージ',
+      exec:(game)=>ultPctDamage(game, 0.30) }},
+  { id:'kitsune',name:'九尾',   emoji:'🦊', laneSize:1, atkType:'area',   proj:'🔥',
+    baseHp:150, baseAtk:50, spd:0.78, range:110, atkSpd:68,  recast:11, maxField:5,
+    lvLimit:5, col:'#e67e22',
+    ultSkill:{ name:'霊狐の守護', emoji:'🛡️', desc:'味方全体が6秒間無敵',
+      exec:(game)=>ultInvincible(game, 6) }},
+  { id:'ryu',    name:'龍神',   emoji:'🐉', laneSize:2, atkType:'area',   proj:'⚡',
+    baseHp:550, baseAtk:80, spd:0.42, range:150, atkSpd:100, recast:18, maxField:2,
+    lvLimit:5, col:'#f1c40f',
+    ultSkill:{ name:'凍結', emoji:'❄️', desc:'敵全体を5秒間凍結（移動・攻撃停止）',
+      exec:(game)=>ultFreeze(game, 5) }},
+  { id:'tanuki',  name:'狸',    emoji:'🦝', laneSize:1, atkType:'single', proj:null,
+    baseHp:320, baseAtk:22, spd:0.9,  range:58,  atkSpd:58,  recast:6,  maxField:6,
+    lvLimit:5, col:'#8e5a2b',
+    ultSkill:{ name:'化け化け', emoji:'🪄', desc:'敵全体に現在HPの20%ダメージ',
+      exec:(game)=>ultPctDamage(game, 0.20) }},
+  { id:'kirin',   name:'麒麟',  emoji:'🦄', laneSize:1, atkType:'single', proj:'⭐',
+    baseHp:280, baseAtk:35, spd:0.7,  range:80,  atkSpd:70,  recast:9,  maxField:5,
+    lvLimit:5, col:'#f39c12',
+    ultSkill:{ name:'神気', emoji:'✨', desc:'味方全体が8秒間無敵',
+      exec:(game)=>ultInvincible(game, 8) }},
+  { id:'hebi',    name:'白蛇',  emoji:'🐍', laneSize:1, atkType:'single', proj:null,
+    baseHp:180, baseAtk:28, spd:1.3,  range:48,  atkSpd:48,  recast:5,  maxField:8,
+    lvLimit:5, col:'#1e8449',
+    ultSkill:{ name:'毒霧', emoji:'☠️', desc:'敵全体に現在HPの25%ダメージ',
+      exec:(game)=>ultPctDamage(game, 0.25) }},
+];
+
+// ========== 必殺技実装 ==========
+function ultKnockback(game){
+  // 全敵を画面下方向へ大きくノックバック
+  game.enemies.forEach(e=>{
+    e.kbVY = -8;
+  });
+  showUltEffect('🌊 大波！');
+}
+function ultSpeedChange(game){
+  // 味方速度2倍・敵速度半減 8秒
+  game.allies.forEach(a=>{ a.spdBuff = (a.spdBuff||0) + 480; });
+  game.enemies.forEach(e=>{ e.spdDebuff = (e.spdDebuff||0) + 480; });
+  showUltEffect('💨 嵐の加護！');
+}
+function ultPctDamage(game, pct){
+  game.enemies.forEach(e=>{ e.hp -= e.hp * pct; });
+  addParticlesGlobal(game, '#ff4444', 30);
+  showUltEffect(`🔥 ${Math.round(pct*100)}%ダメージ！`);
+}
+function ultInvincible(game, sec){
+  game.allies.forEach(a=>{ a.invincible = (a.invincible||0) + sec*60; });
+  showUltEffect(`🛡️ ${sec}秒間無敵！`);
+}
+function ultFreeze(game, sec){
+  game.enemies.forEach(e=>{ e.frozen = (e.frozen||0) + sec*60; });
+  addParticlesGlobal(game, '#88ddff', 20);
+  showUltEffect(`❄️ 全凍結！`);
+}
+function addParticlesGlobal(game, col, n){
+  for(let i=0;i<n;i++){
+    const x=Math.random()*game.CW, y=Math.random()*game.CH;
+    const a=Math.random()*Math.PI*2, sp=2+Math.random()*5;
+    game.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:25,maxLife:25,col,big:true});
+  }
+}
+
+let ultOverlayTimer=null;
+function showUltEffect(text){
+  const el=document.getElementById('ult-overlay');
+  const tx=document.getElementById('ult-text');
+  tx.textContent=text;
+  el.classList.add('show');
+  if(ultOverlayTimer) clearTimeout(ultOverlayTimer);
+  ultOverlayTimer=setTimeout(()=>el.classList.remove('show'),1800);
+}
+
+// ========== 敵定義 ==========
+const ENEMY_DEFS=[
+  {emoji:'👻',name:'幽霊',  hp:130,atk:14,spd:0.75,range:50,atkSpd:55,laneSize:1,atkType:'single',col:'#9b59b6'},
+  {emoji:'🐸',name:'河童鬼',hp:300,atk:24,spd:0.5, range:52,atkSpd:75,laneSize:1,atkType:'single',col:'#27ae60'},
+  {emoji:'😈',name:'悪鬼',  hp:600,atk:42,spd:0.38,range:58,atkSpd:85,laneSize:2,atkType:'area',  col:'#e74c3c'},
+  {emoji:'🕷️',name:'土蜘蛛',hp:200,atk:20,spd:1.2, range:44,atkSpd:50,laneSize:1,atkType:'single',col:'#8e44ad'},
+  {emoji:'💀',name:'骸骨',  hp:230,atk:28,spd:0.9, range:48,atkSpd:52,laneSize:1,atkType:'single',col:'#7f8c8d'},
+  {emoji:'🦇',name:'大蝙蝠',hp:150,atk:18,spd:1.45,range:44,atkSpd:44,laneSize:1,atkType:'single',col:'#636e72'},
+  {emoji:'🎃',name:'鬼火',  hp:100,atk:12,spd:1.6, range:40,atkSpd:40,laneSize:1,atkType:'single',col:'#e67e22'},
+  {emoji:'🔮',name:'鬼術師',hp:280,atk:32,spd:0.6, range:65,atkSpd:58,laneSize:1,atkType:'area',  col:'#8e44ad'},
+  {emoji:'🌪️',name:'風魔',  hp:420,atk:36,spd:0.85,range:72,atkSpd:65,laneSize:2,atkType:'area',  col:'#5dade2'},
+];
+const BOSS_DEFS=[
+  {emoji:'🐲',name:'大妖龍',  hp:5000, atk:130,spd:0.2, range:85, atkSpd:110,laneSize:5,atkType:'area',col:'#8e44ad',kbForce:300,introText:'⚠️ 大妖龍 降臨！',
+   // 出現時: ノックバック300 + ATK100%ダメージ
+   intro:{
+     exec:(G,def)=>{
+       G.allies.forEach(a=>{ a.kbVY=300*0.1; a.at=0; });
+       G.allies.forEach(a=>{ if(!a.invincible){ a.hp-=Math.round(def.atk*0.5); addParticles(uCX(a),a.y,'#e74c3c',6,true); }});
+     }},
+   // 咆哮: 30秒毎、全体ノックバック100
+   roar:{interval:1800, text:'🐲 咆哮！',
+     exec:(G,boss)=>{
+       G.allies.forEach(a=>{ a.kbVY=100*0.1; a.at=0; });
+     }}},
+  {emoji:'👺',name:'大天魔王',hp:10000,atk:200,spd:0.16,range:95, atkSpd:120,laneSize:5,atkType:'area',col:'#c0392b',kbForce:300,introText:'⚠️ 大天魔王 現る！',
+   intro:{
+     exec:(G,def)=>{
+       G.allies.forEach(a=>{ a.kbVY=300*0.1; a.at=0; });
+       G.allies.forEach(a=>{ if(!a.invincible){ a.hp-=Math.round(def.atk*0.5); addParticles(uCX(a),a.y,'#e74c3c',6,true); }});
+     }},
+   roar:{interval:1800, text:'👺 咆哮！',
+     exec:(G,boss)=>{
+       G.allies.forEach(a=>{ a.kbVY=100*0.1; a.at=0; });
+     }}},
+  {emoji:'☠️',name:'冥府の王',hp:18000,atk:280,spd:0.12,range:105,atkSpd:130,laneSize:5,atkType:'area',col:'#2c3e50',kbForce:300,introText:'⚠️ 冥府の王 降臨！！',
+   intro:{
+     exec:(G,def)=>{
+       G.allies.forEach(a=>{ a.kbVY=300*0.1; a.at=0; });
+       G.allies.forEach(a=>{ if(!a.invincible){ a.hp-=Math.round(def.atk*0.5); addParticles(uCX(a),a.y,'#e74c3c',6,true); }});
+     }},
+   roar:{interval:1800, text:'☠️ 咆哮！',
+     exec:(G,boss)=>{
+       G.allies.forEach(a=>{ a.kbVY=100*0.1; a.at=0; });
+     }}},
+];
+const EN_CASTLE_BASE=[5000,12000,25000]; // 第1夜,第2夜,第3夜の城壁HP
+const LAST_WAVE=3;
+
+// ========== ゲームデータ ==========
+let gd = {
+  stage:1, run:1,
+  chars: CHAR_DEFS.map(c=>({id:c.id, lv:0, hasUlt:false})),
+  clearedWave: 0,
+  trainableIds: [],
+};
+let deployedIds=[];
+
+// charデータ取得
+function gc_data(id){ return gd.chars.find(c=>c.id===id); }
+function gc_def(id){ return CHAR_DEFS.find(c=>c.id===id); }
+
+// Lv係数
+function lvMult(lv){ return 1+lv*0.20; }
+
+// ========== 星背景 ==========
+(function(){
+  const sc=document.getElementById('stars-cv');
+  if(!sc)return;
+  sc.width=420; sc.height=800;
+  const cx=sc.getContext('2d');
+  const stars=Array.from({length:70},()=>({x:Math.random()*420,y:Math.random()*800,r:Math.random()*1.4+0.2,a:Math.random()}));
+  function f(){cx.clearRect(0,0,420,800);stars.forEach(s=>{s.a+=0.007*(Math.random()>0.5?1:-1);s.a=Math.max(0.1,Math.min(0.9,s.a));cx.fillStyle=`rgba(255,255,220,${s.a})`;cx.beginPath();cx.arc(s.x,s.y,s.r,0,Math.PI*2);cx.fill();});requestAnimationFrame(f);}
+  f();
+})();
+
+// ========== 画面遷移 ==========
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='title-screen') updateContinueBtn();
+}
+function showFormation(){deployedIds=[];applyBaseLevels();renderFormation();renderWaveSelect();showScreen('formation-screen');}
+
+function renderFormation(){
+  // 出撃スロット
+  const row=document.getElementById('deploy-row'); row.innerHTML='';
+  for(let i=0;i<5;i++){
+    const id=deployedIds[i];
+    const slot=document.createElement('div');
+    slot.className='deploy-slot'+(id?' filled':'');
+    if(id){
+      const def=gc_def(id), dat=gc_data(id);
+      slot.innerHTML=`<span class="ds-emoji">${def.emoji}</span><span class="ds-name">${def.name}</span><span class="ds-lv">Lv${dat.lv}</span><span class="ds-rm">✕</span>`;
+      const _id=id; slot.querySelector('.ds-rm').onclick=e=>{e.stopPropagation();deployedIds=deployedIds.filter(d=>d!==_id);renderFormation();};
+    }else{slot.innerHTML='<span style="font-size:18px;opacity:0.2">＋</span>';}
+    row.appendChild(slot);
+  }
+  // キャラ一覧
+  const list=document.getElementById('char-list'); list.innerHTML='';
+  CHAR_DEFS.forEach(def=>{
+    const dat=gc_data(def.id);
+    const sel=deployedIds.includes(def.id);
+    const c=document.createElement('div'); c.className='char-card'+(sel?' selected':'');
+    const hp=Math.round(def.baseHp*lvMult(dat.lv)), atk=Math.round(def.baseAtk*lvMult(dat.lv));
+    c.innerHTML=`<div class="cc-top"><span class="cc-emoji">${def.emoji}</span><div class="cc-info"><div class="cc-name">${def.name}</div><div class="cc-lv">Lv ${dat.lv} / 上限${def.lvLimit}</div><div class="cc-ult">必殺：${def.ultSkill.name}${dat.hasUlt?' ✅':' 🔒'}</div></div></div><div class="cc-stats"><span class="stat-tag">HP ${hp}</span><span class="stat-tag">ATK ${atk}</span><span class="stat-tag">${def.laneSize}列</span><span class="stat-tag">${def.atkType==='area'?'範囲':'単体'}</span></div>`;
+    c.onclick=()=>{
+      if(sel){deployedIds=deployedIds.filter(d=>d!==def.id);}
+      else if(deployedIds.length<5){deployedIds.push(def.id);}
+      renderFormation();
+    };
+    list.appendChild(c);
+  });
+  document.getElementById('start-btn').disabled=deployedIds.length===0;
+  document.getElementById('form-sub').textContent=`${deployedIds.length}/5体選択中`;
+  document.getElementById('stage-info-txt').textContent=`第${gd.stage}夜 — 周回${gd.run}`;
+}
+
+// ========== 強化システム ==========
+const GEM_THRESHOLD=100;
+const PT_PER_GEM=10;
+let sessionGems=0;
+let lastUpgradeGems=0;
+let upgradePoints=0;
+let charBoostPct={};
+
+// 強化12種生成（城壁2 + キャラ強化5 + 必殺技付与5）
+function buildUpgradePool(){
+  const pool=[];
+  deployedIds.forEach(id=>{
+    const def=gc_def(id), dat=gc_data(id);
+    // キャラ強化（上限未達のみ）
+    if((charBoostPct[id]||0)<1000){
+      pool.push({
+        icon:def.emoji,
+        name:`${def.name} 強化`,
+        desc:'HP・ATK +1%UP',
+        cost:1,
+        isCharBoost:true,
+        charId:id,
+        closeAfter:false, // タップしてもパネルを閉じない
+        apply:()=>{ useCharBoost(id,1); } // 1ptで1%
+      });
+    }
+    // 必殺技付与（未解放のみ）
+    if(!dat.hasUlt){
+      pool.push({
+        icon:def.ultSkill.emoji,
+        name:`${def.name}の必殺技`,
+        desc:`「${def.ultSkill.name}」解放\n${def.ultSkill.desc}`,
+        cost:10,
+        isCharBoost:false,
+        closeAfter:false, // ストックまで閉じない
+        apply:()=>{ useUltGrant(id); }
+      });
+    }
+  });
+  return pool;
+}
+
+function pickRandom3(pool){
+  const s=[...pool].sort(()=>Math.random()-0.5);
+  return s.slice(0,Math.min(3,s.length));
+}
+
+// ========== ゲームエンジン ==========
+const cv=document.getElementById('gc');
+const ctx2=cv.getContext('2d');
+let CW=420,CH=320;
+
+function resizeCanvas(){
+  const wrap=document.getElementById('canvas-wrap');
+  CW=wrap.clientWidth||380;
+  CH=wrap.clientHeight||280;
+  cv.width=CW; cv.height=CH;
+}
+
+const LANES=5;
+const LW=()=>CW/LANES;
+const EN_Y=()=>46;
+const MY_Y=()=>CH-48;
+const SZ_Y=()=>CH*0.72;
+const MY_MAX_HP_BASE=1000;
+
+function laneLeft(l){return LW()*l;}
+function uCX(u){return LW()*u.lane+LW()*u.laneSize/2;}
+function uW(u){return LW()*u.laneSize;}
+function uFS(u){return u.laneSize>=5?Math.round(LW()*0.78):u.laneSize>=2?Math.round(LW()*0.4):Math.round(LW()*0.25);}
+
+// ゲーム状態
+let G=null; // メインゲーム状態オブジェクト
+let rid=null;
+
+function initG(){
+  applyBaseLevels();
+  charBoostPct={}; deployedIds.forEach(id=>{charBoostPct[id]=0;});
+  upgradePoints=0; lastUpgradeGems=0;
+  contUsed=false; // コンティニュー使用済みリセット
+  const sc=1+(gd.stage-1)*0.35+(gd.run-1)*0.6;
+  const myMaxHp=MY_MAX_HP_BASE;
+  G={
+    CW,CH,
+    allies:[],enemies:[],bullets:[],particles:[],
+    wave:1, kills:0, stageKills:0,
+    myHp:myMaxHp, myMaxHp,
+    enCastleHp:Math.round(EN_CASTLE_BASE[Math.min(gd.stage-1,EN_CASTLE_BASE.length-1)]*sc), enCastleMaxHp:Math.round(EN_CASTLE_BASE[Math.min(gd.stage-1,EN_CASTLE_BASE.length-1)]*sc),
+    frame:0, gameOver:false, gameWin:false, paused:false,
+    cdTimers:{}, fieldCount:{},
+    normalSpawnTimer:80,  normalSpawnInterval:70,
+    bossSpawned:false, bossAlive:false, nextBossKillThreshold:0,
+    // 40〜60%のランダムなHPでボス出現（毎Wave新しいしきい値を設定）
+    bossThreshold: 0.4+Math.random()*0.2,
+    contBuff:0,
+    bossRoarTimer:0, bossRoarAtk:0,
+    infiniteWave:false,
+    screenShake:{x:0,y:0,dur:0},
+    bossIntro:{active:false,text:'',timer:0},
+    // 必殺技使用可否（true=使用可能）
+    ultReady:{},
+    // バフ/デバフ状態
+    speedBuff:0,   // 残りフレーム
+    speedDebuff:0,
+    stageGems:0,
+    infiniteSurviveTimer:0, // 最終WAVE生存タイマー
+  };
+  // deployedIds の CD・fieldCount
+  deployedIds.forEach(id=>{
+    G.cdTimers[id]=0; G.fieldCount[id]=0;
+    const dat=gc_data(id);
+    G.ultReady[id]=dat.hasUlt;
+  });
+  sessionGems=0; lastUpgradeGems=0;
+}
+
+// ---- ユニットカード ----
+function renderUnitCards(){
+  const row=document.getElementById('unit-row'); row.innerHTML='';
+  deployedIds.forEach(id=>{
+    const def=gc_def(id), dat=gc_data(id);
+    const card=document.createElement('div');
+    card.className='ucard'+(G.ultReady[id]?' has-ult':'');
+    card.id='ucard-'+id;
+    card.innerHTML=`<span class="ue">${def.emoji}</span><span class="un">${def.name}</span><span class="ulv">Lv${dat.lv}</span><span class="uco" id="cnt-${id}">0/${def.maxField}</span><span class="ult-badge" id="ult-${id}">${G.ultReady[id]?def.ultSkill.emoji:'🔒'}</span><div class="ucd" id="cd-${id}"><span class="cdlb">CD</span><span id="cdt-${id}">-</span></div>`;
+    setupCardEvents(card,id);
+    row.appendChild(card);
+  });
+}
+
+function updateCards(){
+  deployedIds.forEach(id=>{
+    const def=gc_def(id), dat=gc_data(id);
+    const cdEl=document.getElementById('cd-'+id);
+    const cntEl=document.getElementById('cnt-'+id);
+    const cdtEl=document.getElementById('cdt-'+id);
+    const ultEl=document.getElementById('ult-'+id);
+    const card=document.getElementById('ucard-'+id);
+    if(!cdEl)return;
+    const onCd=G.cdTimers[id]>0, full=G.fieldCount[id]>=def.maxField;
+    cdEl.style.display=(onCd||full)?'flex':'none';
+    if(cdtEl) cdtEl.textContent=onCd?Math.ceil(G.cdTimers[id]/60)+'s':'MAX';
+    if(cntEl) cntEl.textContent=G.fieldCount[id]+'/'+def.maxField;
+    if(card){card.style.opacity=(onCd||full)?'0.4':'1';card.className='ucard'+(G.ultReady[id]?' has-ult':'');}
+    if(ultEl) ultEl.textContent=G.ultReady[id]?def.ultSkill.emoji:'🔒';
+  });
+}
+
+// ---- ドラッグ ----
+const ghost=document.getElementById('ghost');
+const laneInd=document.getElementById('lane-ind');
+let dragging=null,dragId=null,dragLane=-1;
+
+function getCP(e){return e.touches?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY};}
+function c2cv(cx,cy){const r=cv.getBoundingClientRect();return{x:(cx-r.left)*(CW/r.width),y:(cy-r.top)*(CH/r.height)};}
+function cxToLane(cx,ls){const r=cv.getBoundingClientRect();const px=(cx-r.left)*(CW/r.width);return Math.max(0,Math.min(LANES-ls,Math.floor(px/LW())));}
+
+// 長押し判定
+let pressTimer=null, pressingId=null;
+const LONG_PRESS_MS=500;
+
+
+
+function fireUlt(id){
+  if(!G||!G.ultReady[id]) return;
+  G.ultReady[id]=false;
+  // 使用後は未解放状態に戻す（再装填なし・次の強化で再度解放が必要）
+  const dat=gc_data(id);
+  if(dat) dat.hasUlt=false;
+  const def=gc_def(id);
+  def.ultSkill.exec(G);
+  updateCards();
+}
+
+function setupCardEvents(card,id){
+  let longPressTimer=null;
+  let didLongPress=false;
+
+  function onTouchStart(e){
+    if(!G||G.gameOver) return;
+    if(e.touches.length!==1) return;
+    e.preventDefault(); // passive:false で呼べる
+
+    didLongPress=false;
+
+    // 必殺技が使える場合は長押し判定を開始
+    if(G.ultReady&&G.ultReady[id]){
+      card.classList.add('pressing');
+      longPressTimer=setTimeout(()=>{
+        longPressTimer=null;
+        didLongPress=true;
+        card.classList.remove('pressing');
+        fireUlt(id);
+        // 長押し後はドラッグに移行させない
+        dragging=null; dragId=null; dragLane=-1;
+        ghost.style.display='none'; laneInd.style.display='none';
+      },LONG_PRESS_MS);
+      // 長押し開始時はまだドラッグを始めない（指が動いたらドラッグに移行）
+      return;
+    }
+
+    // 必殺技なし → 即ドラッグ開始
+    startDrag(e);
+  }
+
+  function onTouchMove(e){
+    if(longPressTimer){
+      // 指が動いたら長押しキャンセルしてドラッグに移行
+      clearTimeout(longPressTimer); longPressTimer=null;
+      card.classList.remove('pressing');
+      startDrag(e);
+    }
+  }
+
+  function onTouchEnd(e){
+    if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; }
+    card.classList.remove('pressing');
+    // 長押し発動済みならドラッグ処理に渡さない
+    if(didLongPress){ didLongPress=false; return; }
+  }
+
+  function startDrag(e){
+    if(!G||G.gameOver||G.cdTimers[id]>0||G.fieldCount[id]>=gc_def(id).maxField) return;
+    dragging=card; dragId=id;
+    const p=getCP(e);
+    ghost.textContent=gc_def(id).emoji; ghost.style.display='block';
+    ghost.style.left=p.x+'px'; ghost.style.top=p.y+'px';
+    laneInd.style.display='block';
+    dragLane=cxToLane(p.x,gc_def(id).laneSize);
+  }
+
+  // touchstart は passive:false で1つだけ登録
+  card.addEventListener('touchstart', onTouchStart, {passive:false});
+  card.addEventListener('touchmove',  onTouchMove,  {passive:false});
+  card.addEventListener('touchend',   onTouchEnd,   {passive:true});
+  card.addEventListener('touchcancel',onTouchEnd,   {passive:true});
+
+  // マウス用（PC）
+  let mouseLongTimer=null;
+  let mouseDidLongPress=false;
+
+  card.addEventListener('mousedown', e=>{
+    if(!G||G.gameOver) return;
+    mouseDidLongPress=false;
+
+    // 必殺技が使える場合は長押し判定
+    if(G.ultReady&&G.ultReady[id]){
+      card.classList.add('pressing');
+      mouseLongTimer=setTimeout(()=>{
+        mouseLongTimer=null;
+        mouseDidLongPress=true;
+        card.classList.remove('pressing');
+        fireUlt(id);
+      }, LONG_PRESS_MS);
+      return; // mouseup で判断
+    }
+    // 必殺技なし → 即ドラッグ
+    if(G.cdTimers[id]>0||G.fieldCount[id]>=gc_def(id).maxField) return;
+    startDrag(e);
+  });
+
+  card.addEventListener('mouseup', e=>{
+    if(mouseLongTimer){ clearTimeout(mouseLongTimer); mouseLongTimer=null; }
+    card.classList.remove('pressing');
+    // 長押し未発動 かつ 必殺技なし → ドラッグ開始（mousedownで開始済みの場合はonEndで処理）
+    if(mouseDidLongPress){ mouseDidLongPress=false; }
+  });
+
+  card.addEventListener('mouseleave', e=>{
+    // マウスがカードから出たら長押しキャンセル → ドラッグに移行
+    if(mouseLongTimer){
+      clearTimeout(mouseLongTimer); mouseLongTimer=null;
+      card.classList.remove('pressing');
+      if(!G||G.gameOver||G.cdTimers[id]>0||G.fieldCount[id]>=gc_def(id).maxField) return;
+      startDrag(e);
+    }
+  });
+}
+
+// 後方互換のため空関数として残す
+function setupLongPress(){}
+function setupDrag(){}
+
+function onMove(e){
+  if(!dragging) return;
+  if(e.cancelable) e.preventDefault();
+  const p=getCP(e);
+  ghost.style.left=p.x+'px'; ghost.style.top=p.y+'px';
+  const ls=gc_def(dragId).laneSize;
+  dragLane=cxToLane(p.x,ls);
+  const r=cv.getBoundingClientRect();
+  const hcx=laneLeft(dragLane)+LW()*ls/2;
+  laneInd.style.left=(r.left+hcx*(r.width/CW))+'px';
+  laneInd.style.top=(p.y-22)+'px';
+  laneInd.textContent=`列${dragLane+1}${ls>1?'～'+(dragLane+ls):''}`;
+}
+function onEnd(e){
+  if(!dragging)return;
+  ghost.style.display='none'; laneInd.style.display='none';
+  // 強化パネル・Wave間バナー表示中はキャンセル
+  if(G && G.paused){ dragging=null; dragId=null; dragLane=-1; return; }
+  const p=e.changedTouches?{x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY}:{x:e.clientX,y:e.clientY};
+  const r=cv.getBoundingClientRect();
+  const cp=c2cv(p.x,p.y);
+  const inCv=p.x>=r.left&&p.x<=r.right&&p.y>=r.top&&p.y<=r.bottom;
+  const belowCv=p.y>r.bottom&&p.y<r.bottom+120;
+  if(inCv||belowCv){
+    const ls=gc_def(dragId).laneSize;
+    const lane=cxToLane(p.x,ls);
+    const sy=MY_Y()-26; // 自城城壁ライン上に固定
+    spawnAlly(dragId,lane,sy);
+  }
+  dragging=null; dragId=null; dragLane=-1;
+}
+window.addEventListener('mousemove',onMove);
+window.addEventListener('mouseup',onEnd);
+window.addEventListener('touchmove',onMove,{passive:false});
+window.addEventListener('touchend',onEnd);
+
+function spawnAlly(id,lane,y){
+  if(!G)return;
+  const def=gc_def(id), dat=gc_data(id);
+  const m=lvMult(dat.lv);
+  const boost=1+(charBoostPct[id]||0)/100;
+  G.allies.push({
+    uid:Math.random(), defId:id,
+    emoji:def.emoji, name:def.name, col:def.col,
+    laneSize:def.laneSize, atkType:def.atkType, proj:def.proj,
+    hp:Math.round(def.baseHp*m*boost), maxHp:Math.round(def.baseHp*m*boost),
+    atk:Math.round(def.baseAtk*m*boost), spd:def.spd,
+    range:def.range, atkSpd:def.atkSpd,
+    lane, x:uCX({lane,laneSize:def.laneSize}), y,
+    at:0, isEnemy:false, kbVY:0,
+    invincible:0, spdBuff:0,
+  });
+  G.fieldCount[id]++;
+  G.cdTimers[id]=def.recast*60;
+  updateCards();
+}
+
+// ---- 敵スポーン ----
+function spawnNormal(){
+  const sc=1+(gd.stage-1)*0.4+(gd.run-1)*0.6+(G.wave-1)*0.2;
+  const pool=ENEMY_DEFS.map(d=>({...d,hp:Math.round(d.hp*sc),atk:Math.round(d.atk*sc),maxHp:Math.round(d.hp*sc)}));
+  const def=pool[Math.floor(Math.random()*pool.length)];
+  const ml=LANES-def.laneSize;
+  const lane=Math.floor(Math.random()*(ml+1));
+  G.enemies.push({...def,uid:Math.random(),lane,x:uCX({lane,laneSize:def.laneSize}),y:EN_Y()+40,at:0,isEnemy:true,kbVY:0,frozen:0,spdDebuff:0});
+}
+function spawnBoss(){
+  G.bossSpawned=true; G.bossAlive=true;
+  // ボス出現 → Wave1→2 に移行
+  if(G.wave===1){ G.wave=2; updateHUD(); }
+  const sc=1+(gd.stage-1)*0.3+(gd.run-1)*0.8;
+  // WaveとステージでボスをローテーションB(Wave-1 + stage-1) % ボス数
+  const bossIdx=(gd.stage-1)%BOSS_DEFS.length; // 夜ごとにボスをローテーション
+  const bd={...BOSS_DEFS[bossIdx]};
+  bd.hp=Math.round(bd.hp*sc); bd.atk=Math.round(bd.atk*sc); bd.maxHp=bd.hp;
+  const u={...bd,uid:Math.random(),lane:0,x:CW/2,y:EN_Y()+50,at:0,isEnemy:true,isBoss:true,kbVY:0,frozen:0,spdDebuff:0};
+  G.enemies.push(u);
+  triggerBossIntro(bd);
+  document.getElementById('boss-wrap').style.display='';
+}
+function triggerBossIntro(def){
+  // ボスごとの出現時演出を実行
+  if(def.intro && def.intro.exec){
+    def.intro.exec(G, def);
+  } else {
+    // フォールバック: 共通処理
+    G.allies.forEach(a=>{ a.kbVY=(def.kbForce||300)*0.1; a.at=0; });
+    G.allies.forEach(a=>{ if(!a.invincible){ a.hp-=Math.round(def.atk*0.5); addParticles(uCX(a),a.y,'#e74c3c',6,true); }});
+  }
+  // 咆哮タイマー初期化
+  G.bossRoarTimer=0;
+  G.screenShake.dur=50;
+  for(let i=0;i<80;i++){const a=Math.random()*Math.PI*2,sp=4+Math.random()*9;G.particles.push({x:CW/2,y:EN_Y()+60,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:38,maxLife:38,col:['#e74c3c','#f39c12','#fff','#9b59b6','#ffd740'][Math.floor(Math.random()*5)],big:true});}
+  G.bossIntro={active:true,text:def.introText||'⚠️ BOSS！',timer:200};
+}
+
+// ---- 当たり判定 ----
+function occupiedLanes(u){const a=[];for(let i=0;i<u.laneSize;i++){const l=u.lane+i;if(l>=0&&l<LANES)a.push(l);}return a;}
+function lanesOverlap(a,b){return occupiedLanes(a).some(l=>occupiedLanes(b).includes(l));}
+function nearestInRange(u,list){
+  let best=null,bd=Infinity;
+  for(const t of list){
+    if(!lanesOverlap(u,t)) continue;
+    let d;
+    if(u.isBoss || t.isBoss){
+      // ボスは中心同士で距離計算（5列全幅のため端点基準だと遠すぎる）
+      d = Math.abs(u.y - t.y);
+    } else {
+      // 通常: 味方は上端・敵は下端を基準に距離計算
+      const uy = u.isEnemy ? u.y+uFS(u)*0.5 : u.y-uFS(u)*0.5;
+      const ty = t.isEnemy ? t.y+uFS(t)*0.5 : t.y-uFS(t)*0.5;
+      d = Math.abs(uy-ty);
+    }
+    if(d<bd){bd=d;best=t;}
+  }
+  return best&&bd<=u.range?best:null;
+}
+function blockedByBoss(a){const boss=G.enemies.find(e=>e.isBoss);if(!boss||!lanesOverlap(a,boss))return false;return boss.y<a.y&&(a.y-boss.y)<uFS({laneSize:boss.laneSize})*0.85;}
+
+function addBullet(from,to,dmg,emoji,isArea){G.bullets.push({x:uCX(from),y:from.y-8,tx:uCX(to),ty:to.y,targetUid:to.uid,dmg,emoji,spd:6,isArea,areaR:LW()*1.4,isEnemy:from.isEnemy,lane:from.lane,laneSize:from.laneSize,done:false});}
+function addParticles(x,y,col,n,big){for(let i=0;i<(n||4);i++){const a=Math.random()*Math.PI*2,sp=big?(4+Math.random()*8):(1+Math.random()*3);G.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:big?30:16,maxLife:big?30:16,col,big:!!big});}}
+
+// ---- HUD更新 ----
+function updateHUD(){
+  if(!G)return;
+  document.getElementById('hud-wave').textContent=G.wave;
+  const stageEl=document.getElementById('hud-stage');
+  if(stageEl) stageEl.textContent=gd.stage;
+  document.getElementById('hud-kill').textContent=G.stageKills;
+  document.getElementById('hud-gem').textContent=sessionGems;
+  const toNext=GEM_THRESHOLD-((sessionGems-lastUpgradeGems)%GEM_THRESHOLD);
+  document.getElementById('gem-prog').textContent=`(次まで${toNext})`;
+  if(!G.infiniteWave) document.getElementById('hud-ehp').textContent=Math.max(0,Math.round(G.enCastleHp));
+  else document.getElementById('hud-ehp').textContent='∞';
+  const boss=G.enemies.find(e=>e.isBoss);
+  if(boss){document.getElementById('boss-wrap').style.display='';document.getElementById('boss-hp-hud').textContent=Math.max(0,Math.round(boss.hp));}
+  else if(!G.bossAlive) document.getElementById('boss-wrap').style.display='none';
+  const r=Math.max(0,G.myHp/G.myMaxHp);
+  document.getElementById('mhp-fill').style.width=(r*100)+'%';
+  document.getElementById('mhp-fill').style.background=r>0.5?'#2ecc71':r>0.25?'#f39c12':'#e74c3c';
+  document.getElementById('mhp-txt').textContent=Math.max(0,Math.round(G.myHp))+'/'+G.myMaxHp;
+  updateCards();
+}
+
+// ---- 強化パネル ----
+function checkGemUpgrade(){
+  if(!G||G.paused) return;
+  const earned=sessionGems-lastUpgradeGems;
+  if(earned>=GEM_THRESHOLD){
+    const gained=Math.floor(earned/GEM_THRESHOLD);
+    lastUpgradeGems+=gained*GEM_THRESHOLD;
+    upgradePoints+=gained*PT_PER_GEM;
+    updateUpgradePointHUD();
+    // 霊玉100到達 → 出陣前と同じ3択パネルを開く
+    G.paused=true;
+    _legacyOnDone=null; // バトル中なのでonDoneなし
+    _openUpgradePanelChoices();
+  }
+}
+function updateUpgradePointHUD(){
+  const el=document.getElementById('hud-pts'); if(el) el.textContent=upgradePoints;
+  const btn=document.getElementById('btn-pts'); if(btn) btn.textContent=upgradePoints;
+}
+
+let _legacyOnDone=null;
+
+function openUpgradePanel(onDone){
+  // 出陣前(onDoneあり)・バトル中どちらも10pt付与して3択を表示
+  upgradePoints+=10;
+  updateUpgradePointHUD();
+  if(onDone) _legacyOnDone=onDone;
+  _openUpgradePanelChoices();
+}
+
+// 3択を表示してpt消費で選ぶパネル
+function _openUpgradePanelChoices(){
+  const pool=buildUpgradePool();
+  const choices=pickRandom3(pool);
+  if(choices.length===0){
+    closeUpgradePanelDone(_legacyOnDone);
+    return;
+  }
+  renderChoicesPanel(choices);
+  document.getElementById('upgrade-panel').classList.add('show');
+  if(autoMode){
+    function autoPickLoop(){
+      const affordable=choices.filter(u=>upgradePoints>=u.cost);
+      if(affordable.length===0){ closeUpgradePanelDone(_legacyOnDone); return; }
+      const pick=affordable[Math.floor(Math.random()*affordable.length)];
+      pick.apply();
+      updateUpgradePointHUD(); renderUnitCards();
+      setTimeout(autoPickLoop, 300);
+    }
+    setTimeout(autoPickLoop, 800);
+  }
+}
+
+function renderChoicesPanel(choices){
+  // 毎回プールを再生成して最新のcharBoostPct値を反映
+  choices=buildUpgradePool();
+  if(choices.length===0){ closeUpgradePanelDone(_legacyOnDone); return; }
+  choices=pickRandom3(choices);
+  const container=document.getElementById('up-choices');
+  container.innerHTML='';
+  document.getElementById('up-char-list').innerHTML='';
+  document.getElementById('up-ult-list').innerHTML='';
+  const ptsEl=document.getElementById('up-pts'); if(ptsEl) ptsEl.textContent=upgradePoints;
+  document.getElementById('up-info').textContent='強化を選ぼう（残り'+upgradePoints+'pt）';
+
+  choices.forEach(u=>{
+    const canAfford=upgradePoints>=u.cost;
+    const card=document.createElement('div');
+    card.className='up-card';
+    card.style.opacity=canAfford?'1':'0.4';
+
+    // キャラ強化カードの場合は現在の%と進捗を表示
+    const isCharBoost=u.isCharBoost;
+    const pct=isCharBoost?(charBoostPct[u.charId]||0):null;
+    const nameHtml=`${u.name} <span style="font-size:10px;color:#ffd740;">${u.cost}pt</span>`
+      +(isCharBoost?` <span style="font-size:10px;color:#aaa;">${pct}/1000</span>`:'');
+    const descHtml=isCharBoost?'HP・ATK +1%UP':u.desc;
+
+    card.innerHTML=`<span class="up-icon">${u.icon}</span>
+      <div class="up-txt">
+        <div class="up-name">${nameHtml}</div>
+        <div class="up-desc">${descHtml}</div>
+      </div>`;
+
+    if(canAfford){
+      card.onclick=()=>{
+        u.apply();
+        updateUpgradePointHUD();
+        renderUnitCards();
+        // ストックボタンを押すまで閉じない → 常に再描画
+        renderChoicesPanel(choices);
+      };
+    }
+    container.appendChild(card);
+  });
+}
+function _openLegacy(onDone){
+  const pool=buildUpgradePool(), choices=pickRandom3(pool);
+  const container=document.getElementById('up-choices');
+  container.innerHTML='';
+  ['up-char-list','up-ult-list'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
+  const ptsEl=document.getElementById('up-pts'); if(ptsEl) ptsEl.textContent='';
+  document.getElementById('up-info').textContent='出陣前の強化！1つ選んでください';
+  function applyChoice(u){ u.apply(G); closeUpgradePanelDone(onDone); }
+  if(autoMode){
+    let t=null;
+    choices.forEach(u=>{
+      const card=document.createElement('div'); card.className='up-card';
+      card.innerHTML=`<span class="up-icon">${u.icon}</span><div class="up-txt"><div class="up-name">${u.name}</div><div class="up-desc">${u.desc}</div></div>`;
+      card.onclick=()=>{ if(t){clearTimeout(t);t=null;} applyChoice(u); };
+      container.appendChild(card);
+    });
+    document.getElementById('upgrade-panel').classList.add('show');
+    t=setTimeout(()=>{ if(document.getElementById('upgrade-panel').classList.contains('show')) applyChoice(autoPickUpgrade(choices)); },3000);
+    return;
+  }
+  choices.forEach(u=>{
+    const card=document.createElement('div'); card.className='up-card';
+    card.innerHTML=`<span class="up-icon">${u.icon}</span><div class="up-txt"><div class="up-name">${u.name}</div><div class="up-desc">${u.desc}</div></div>`;
+    card.onclick=()=>applyChoice(u);
+    container.appendChild(card);
+  });
+  document.getElementById('upgrade-panel').classList.add('show');
+}
+function _openUpgradePanelPt(){
+  if(upgradePoints<=0) return;
+  renderUpgradePtPanel();
+  document.getElementById('upgrade-panel').classList.add('show');
+}
+function renderUpgradePtPanel(){
+  const ptsEl=document.getElementById('up-pts'); if(ptsEl) ptsEl.textContent=upgradePoints;
+  document.getElementById('up-choices').innerHTML='';
+  document.getElementById('up-info').textContent='ポイントを使って強化しよう';
+  const charList=document.getElementById('up-char-list');
+  charList.innerHTML='<div style="font-size:10px;color:#aaa;margin-bottom:3px;">⚔️ キャラ強化（1pt=HP/ATK+1%、上限1000%）</div>';
+  deployedIds.forEach(id=>{
+    const def=gc_def(id),pct=charBoostPct[id]||0,isMax=pct>=1000;
+    const canP=upgradePoints>0&&!isMax,can10=upgradePoints>=10&&!isMax;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:5px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);';
+    row.innerHTML=`<span style="font-size:16px;">${def.emoji}</span>
+      <span style="flex:1;font-size:11px;color:#fff;">${def.name} <span style="color:#ffd740;">+${pct}%</span></span>
+      <button onclick="useCharBoost('${id}',-10)" ${pct>0?'':'disabled'} style="padding:2px 6px;border:1px solid rgba(255,255,255,0.2);border-radius:4px;background:rgba(255,255,255,0.05);color:#aaa;font-size:10px;font-family:inherit;cursor:pointer;touch-action:manipulation;">-10</button>
+      <button onclick="useCharBoost('${id}',1)" ${canP?'':'disabled'} style="padding:2px 6px;border:none;border-radius:4px;background:${canP?'linear-gradient(135deg,#2c3e50,#8e44ad)':'rgba(255,255,255,0.1)'};color:#fff;font-size:10px;font-family:inherit;cursor:${canP?'pointer':'not-allowed'};touch-action:manipulation;">+1</button>
+      <button onclick="useCharBoost('${id}',10)" ${can10?'':'disabled'} style="padding:2px 6px;border:none;border-radius:4px;background:${can10?'linear-gradient(135deg,#8e44ad,#c0392b)':'rgba(255,255,255,0.1)'};color:#fff;font-size:10px;font-family:inherit;cursor:${can10?'pointer':'not-allowed'};touch-action:manipulation;">+10</button>`;
+    charList.appendChild(row);
+  });
+  const ultList=document.getElementById('up-ult-list');
+  ultList.innerHTML='<div style="font-size:10px;color:#aaa;margin-bottom:3px;">💥 必殺技付与（10pt）</div>';
+  let anyUlt=false;
+  deployedIds.forEach(id=>{
+    const def=gc_def(id),dat=gc_data(id);
+    if(dat.hasUlt) return;
+    anyUlt=true;
+    const can=upgradePoints>=10;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);';
+    row.innerHTML=`<span style="font-size:18px;">${def.ultSkill.emoji}</span>
+      <div style="flex:1;"><div style="font-size:11px;color:#fff;">${def.name}「${def.ultSkill.name}」</div><div style="font-size:9px;color:#aaa;">${def.ultSkill.desc}</div></div>
+      <button onclick="useUltGrant('${id}')" ${can?'':'disabled'} style="padding:5px 10px;border:none;border-radius:6px;background:${can?'linear-gradient(135deg,#f39c12,#e67e22)':'rgba(255,255,255,0.1)'};color:#fff;font-size:11px;font-family:inherit;cursor:${can?'pointer':'not-allowed'};touch-action:manipulation;">10pt</button>`;
+    ultList.appendChild(row);
+  });
+  if(!anyUlt) ultList.innerHTML+='<div style="font-size:10px;color:#888;padding:4px 0;">全員の必殺技解放済み</div>';
+}
+function useCharBoost(id,delta){
+  if(delta>0){const add=Math.min(delta,upgradePoints,1000-(charBoostPct[id]||0));if(add<=0)return;upgradePoints-=add;charBoostPct[id]=(charBoostPct[id]||0)+add;}
+  else{const sub=Math.min(-delta,charBoostPct[id]||0);if(sub<=0)return;upgradePoints+=sub;charBoostPct[id]=(charBoostPct[id]||0)-sub;}
+  updateUpgradePointHUD(); renderUpgradePtPanel();
+}
+function useUltGrant(id){
+  if(upgradePoints<10) return;
+  const dat=gc_data(id); if(dat.hasUlt) return;
+  upgradePoints-=10; dat.hasUlt=true;
+  if(G&&G.ultReady) G.ultReady[id]=true;
+  updateUpgradePointHUD(); renderUnitCards();
+}
+function stockAndClose(){ closeUpgradePanelDone(null); }
+function closeUpgradePanel(){ closeUpgradePanelDone(null); }
+function closeUpgradePanelDone(onDone){
+  document.getElementById('upgrade-panel').classList.remove('show');
+  renderUnitCards(); updateHUD();
+  const cb=onDone||_legacyOnDone;
+  _legacyOnDone=null;
+  if(cb) cb(); else if(G) G.paused=false;
+}
+
+
+
+
+// ========== コンティニュー ==========
+function showContinuePopup(){
+  if(!exchContinue||contUsed) return false;
+  G.paused=true;
+  document.getElementById('continue-popup').classList.add('show');
+  return true;
+}
+
+function doContinue(){
+  document.getElementById('continue-popup').classList.remove('show');
+  if(!G){ G.paused=false; return; }
+  contUsed=true;
+  exchContinue=false;
+
+  // 敵を敵城壁まで戻す
+  G.enemies.forEach(e=>{ e.y=EN_Y()+50+Math.random()*40; e.kbVY=0; });
+
+  // 全キャラに必殺技付与
+  deployedIds.forEach(id=>{
+    const dat=gc_data(id);
+    if(dat){ dat.hasUlt=true; if(G.ultReady) G.ultReady[id]=true; }
+  });
+
+  // 10秒間HP/ATK 100%アップ（buff）
+  G.contBuff=600; // 60fps×10秒
+  G.allies.forEach(a=>{ a.maxHp=a.maxHp*2; a.hp=a.maxHp; a.atk=a.atk*2; });
+
+  // 城壁HP を少し回復
+  G.myHp=Math.min(G.myMaxHp, G.myHp+Math.round(G.myMaxHp*0.2));
+  G.paused=false;
+  renderUnitCards();
+  updateHUD();
+  showUltEffect('🔄 コンティニュー！');
+}
+
+function declineContinue(){
+  document.getElementById('continue-popup').classList.remove('show');
+  G.paused=false;
+  G.gameOver=true;
+  showResult(false);
+}
+
+
+// ========== 魔石交換所 ==========
+// バトル前に購入した効果をバトル中に適用する
+let exchGemBonus = 0;    // 霊玉アップ率（0/10/30/60）
+let exchContinue = false; // コンティニュー購入済みか
+let contUsed = false;     // コンティニュー使用済みか（1バトル1回）
+
+// 交換所で購入できる商品定義
+const EXCH_ITEMS = [
+  { id:'gem10',  icon:'💎', name:'霊玉10%アップ',  desc:'リザルト時の霊玉獲得数を10%増加（重複可・加算）', cost:10,
+    canBuy:()=>true, buy:()=>{ exchGemBonus+=10; } },
+  { id:'gem30',  icon:'💎', name:'霊玉30%アップ',  desc:'リザルト時の霊玉獲得数を30%増加（重複可・加算）', cost:60,
+    canBuy:()=>true, buy:()=>{ exchGemBonus+=30; } },
+  { id:'gem60',  icon:'💎', name:'霊玉60%アップ',  desc:'リザルト時の霊玉獲得数を60%増加（重複可・加算）', cost:180,
+    canBuy:()=>true, buy:()=>{ exchGemBonus+=60; } },
+  { id:'cont',   icon:'🔄', name:'コンティニュー', desc:'城壁破壊時に1回だけ継続可能\n敵を城壁まで戻す＋必殺技付与＋10秒間HP/ATK100%アップ', cost:20,
+    canBuy:()=>!exchContinue, buy:()=>{ exchContinue=true; } },
+];
+
+function showExchange(){
+  // 交換所を開く前に残り霊玉を魔石に変換
+  convertAndGoExchange();
+}
+
+function convertAndGoExchange(){
+  const remaining=resGems;
+  if(remaining>0){
+    addMagicStones(remaining);
+    resGems=0;
+    alert('💠 余った霊玉'+remaining+'個を魔石に変換しました。');
+  }
+  renderExchange();
+  showScreen('exchange-screen');
+}
+
+function renderExchange(){
+  const stones=loadMagicStones();
+  const el=document.getElementById('exch-stones'); if(el) el.textContent=stones.toLocaleString();
+  const list=document.getElementById('exch-list'); if(!list) return;
+  list.innerHTML='';
+  EXCH_ITEMS.forEach(item=>{
+    const canAfford=loadMagicStones()>=item.cost;
+    const alreadyBought=item.id==='cont'&&exchContinue;
+    const div=document.createElement('div');
+    div.className='exch-item'+(alreadyBought?' bought':'');
+    div.innerHTML=`<div class="exch-icon">${item.icon}</div>
+      <div class="exch-info">
+        <div class="exch-name">${item.name}</div>
+        <div class="exch-desc">${item.desc.replace('\\n','<br>')}</div>
+        <div style="font-size:10px;color:#c39aff;margin-top:2px;">💠${item.cost}魔石</div>
+      </div>
+      <button class="exch-btn ${alreadyBought?'done':''}" onclick="buyExchItem('${item.id}')"
+        ${alreadyBought||!canAfford?'disabled':''}>${alreadyBought?'購入済み':'購入'}</button>`;
+    list.appendChild(div);
+  });
+  // 現在の購入状況を表示
+  if(exchGemBonus>0||exchContinue){
+    const status=document.createElement('div');
+    status.style.cssText='font-size:10px;color:#2ecc71;margin-top:8px;padding:8px;background:rgba(46,204,113,0.08);border-radius:8px;';
+    status.innerHTML='✅ 次のバトルに適用'+(exchGemBonus>0?` 霊玉+${exchGemBonus}%`:'')+(exchContinue?' コンティニュー×1':'');
+    list.appendChild(status);
+  }
+}
+
+function buyExchItem(id){
+  const item=EXCH_ITEMS.find(i=>i.id===id);
+  if(!item) return;
+  if(!spendMagicStones(item.cost)){ showTopNotify('魔石が足りません'); return; }
+  item.buy();
+  renderExchange();
+}
+
+// リザルト時に霊玉ボーナスを適用
+function applyExchGemBonus(){
+  if(exchGemBonus<=0) return 0;
+  const bonus=Math.round((G?G.stageGems||0:0)*exchGemBonus/100);
+  return bonus;
+}
+
+// バトル開始時にコンティニュー使用済みをリセット
+// exchGemBonus と exchContinue はバトル開始時にリセット
+function resetExchEffects(){
+  exchGemBonus=0;
+  exchContinue=false;
+  contUsed=false;
+}
+
+
+function update(){
+  if(!G||G.gameOver||G.paused) return;
+  G.frame++;
+  deployedIds.forEach(id=>{if(G.cdTimers[id]>0)G.cdTimers[id]--;});
+  if(G.bossIntro.active){G.bossIntro.timer--;if(G.bossIntro.timer<=0)G.bossIntro.active=false;}
+  // ボス生存中: roar定義に従って定期的に咆哮
+  if(G.bossAlive){
+    G.bossRoarTimer++;
+    const liveBoss=G.enemies.find(e=>e.isBoss);
+    const bossRoar=liveBoss ? (BOSS_DEFS.find(b=>b.name===liveBoss.name)||{}).roar : null;
+    if(bossRoar && G.bossRoarTimer>=bossRoar.interval){
+      G.bossRoarTimer=0;
+      bossRoar.exec(G, liveBoss); // ボスごとのカスタム咆哮
+      // 1回目の咆哮 → Wave2→3 に移行
+      if(G.wave===2){ G.wave=3; updateHUD(); }
+      G.screenShake.dur=30;
+      showUltEffect(bossRoar.text);
+      addParticlesGlobal(G,'#e74c3c',40);
+    }
+  }
+  if(G.screenShake.dur>0){const m=Math.min(G.screenShake.dur,12);G.screenShake.x=(Math.random()-0.5)*m;G.screenShake.y=(Math.random()-0.5)*m;G.screenShake.dur--;}
+  else{G.screenShake.x=0;G.screenShake.y=0;}
+  // バフ/デバフタイマー
+  if(G.speedBuff>0) G.speedBuff--;
+  if(G.speedDebuff>0) G.speedDebuff--;
+
+  // スポーン
+  if(G.infiniteWave){
+    G.normalSpawnTimer--;
+    if(G.normalSpawnTimer<=0){spawnNormal();G.normalSpawnInterval=Math.max(28,G.normalSpawnInterval-0.5);G.normalSpawnTimer=Math.round(G.normalSpawnInterval);}
+    if(!G.bossAlive&&G.bossSpawned&&G.kills>=G.nextBossKillThreshold) G.bossSpawned=false;
+    if(!G.bossAlive&&!G.bossSpawned){G.nextBossKillThreshold=G.kills+20;spawnBoss();}
+    // 30秒サバイバル
+    G.infiniteSurviveTimer++;
+    if(G.infiniteSurviveTimer>=30*60){G.gameOver=true;G.gameWin=true;showResult(true);}
+  }else{
+    G.normalSpawnTimer--;
+    if(G.normalSpawnTimer<=0){spawnNormal();G.normalSpawnTimer=Math.round(G.normalSpawnInterval);}
+    if(!G.bossSpawned&&G.enCastleHp/G.enCastleMaxHp<=G.bossThreshold) spawnBoss();
+  }
+
+  // 味方
+  const spdM=G.speedBuff>0?2.0:1.0;
+  for(const u of G.allies){
+    if(u.invincible>0) u.invincible--;
+    if(u.kbVY>0){u.y+=u.kbVY;u.kbVY*=0.78;if(u.kbVY<0.1)u.kbVY=0;u.y=Math.min(MY_Y()-26,u.y);continue;}
+    const t=nearestInRange(u,G.enemies);
+    if(t){
+      u.at++;
+      if(u.at>=u.atkSpd){u.at=0;
+        if(u.proj) addBullet(u,t,u.atk,u.proj,u.atkType==='area');
+        else if(u.atkType==='area'){G.enemies.forEach(e=>{if(lanesOverlap(u,e)&&Math.abs(u.y-e.y)<=u.range)e.hp-=u.atk;});addParticles(uCX(u),u.y,u.col,8);}
+        else{t.hp-=u.atk;addParticles(uCX(t),t.y,'#fff',4);}
+      }
+    }else{
+      if(!G.infiniteWave){
+        const dy=EN_Y()+20-u.y;
+        const bossAliveNow=G.enemies.some(e=>e.isBoss);
+        // ボス未出現時は城壁をHP1で止める（ボスを強制出現させる）
+        // ボス撃破後(bossSpawned=true,bossAlive=false)は城壁攻撃OK
+        // 城壁攻撃: ボス生存中のみ禁止
+        // ボス未出現時はHP1に固定（攻撃・移動は通常通り、HPだけ1から減らない）
+        const bossNotYet=!G.bossSpawned&&!G.bossAlive;
+        if(!bossAliveNow && Math.abs(dy)<=u.range+20){
+          u.at++;if(u.at>=u.atkSpd){u.at=0;
+            G.enCastleHp-=u.atk;
+            if(bossNotYet && G.enCastleHp<=0) G.enCastleHp=1; // 0以下になる場合のみHP1で止める
+            addParticles(uCX(u),EN_Y(),'#ffd740',5);
+          }
+        }
+        else if(!blockedByBoss(u)){u.y-=u.spd*spdM;if(u.y<EN_Y()+10)u.y=EN_Y()+10;}
+      }else if(!blockedByBoss(u)){u.y-=u.spd*spdM;if(u.y<EN_Y()+10)u.y=EN_Y()+10;}
+    }
+  }
+
+  // 敵
+  const spdDM=G.speedDebuff>0?0.5:1.0;
+  for(const e of G.enemies){
+    if(e.frozen>0){e.frozen--;continue;}
+    if(e.kbVY!==0){e.y+=e.kbVY;e.kbVY*=0.78;if(Math.abs(e.kbVY)<0.1)e.kbVY=0;e.y=Math.max(EN_Y()+30,Math.min(CH-20,e.y));continue;}
+    const t=nearestInRange(e,G.allies);
+    if(t){
+      e.at++;
+      if(e.at>=e.atkSpd){e.at=0;
+        if(u=>u.invincible>0,t.invincible>0){/* 無敵中はダメージなし */}
+        else if(e.atkType==='area'){G.allies.forEach(a=>{if(lanesOverlap(e,a)&&Math.abs(e.y-a.y)<=e.range&&!a.invincible){a.hp-=e.atk;addParticles(uCX(a),a.y,'#e74c3c',4);}});addParticles(uCX(e),e.y,'#e74c3c',e.isBoss?14:6,e.isBoss);}
+        else{if(!t.invincible){t.hp-=e.atk;addParticles(uCX(t),t.y,'#e74c3c',4);}}
+      }
+    }else{
+      const dc=MY_Y()-e.y;
+      if(dc<=e.range+22){e.at++;if(e.at>=e.atkSpd){e.at=0;G.myHp-=e.atk;addParticles(CW/2,MY_Y(),'#e74c3c',e.isBoss?12:4,e.isBoss);}}
+      else{e.y+=e.spd*spdDM;}
+    }
+  }
+
+  // 弾
+  for(const b of G.bullets){
+    if(b.done)continue;
+    const dx=b.tx-b.x,dy=b.ty-b.y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<b.spd+4){b.done=true;
+      if(b.isArea){const list=b.isEnemy?G.allies:G.enemies;const fs={lane:b.lane,laneSize:b.laneSize};list.forEach(u=>{if(lanesOverlap(fs,u)&&Math.abs(u.y-b.ty)<b.areaR){if(!b.isEnemy||!u.invincible)u.hp-=b.dmg;}});addParticles(b.tx,b.ty,'#ffd740',8);}
+      else{const tgt=b.isEnemy?G.allies.find(a=>a.uid===b.targetUid):G.enemies.find(e=>e.uid===b.targetUid);if(tgt&&(!b.isEnemy||!tgt.invincible)){tgt.hp-=b.dmg;addParticles(uCX(tgt),tgt.y,'#fff',4);}}
+    }else{b.x+=dx/d*b.spd;b.y+=dy/d*b.spd;}
+  }
+
+  G.particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;p.vx*=0.88;p.vy*=0.88;});
+
+  // 死亡
+  const deadA=G.allies.filter(a=>a.hp<=0);
+  deadA.forEach(a=>{G.fieldCount[a.defId]=Math.max(0,(G.fieldCount[a.defId]||0)-1);addParticles(uCX(a),a.y,a.col,8);});
+  const deadE=G.enemies.filter(e=>e.hp<=0);
+  G.kills+=deadE.length; G.stageKills+=deadE.length;
+  deadE.forEach(e=>{
+    if(e.isBoss){
+      G.bossAlive=false;
+      document.getElementById('boss-wrap').style.display='none';
+      // ボス撃破後はWave維持（Wave2のままなら城壁HP0で夜クリア）
+    }
+    const gem=e.isBoss?100:(e.laneSize>=2&&e.atkType==='area'?4:e.laneSize>=2?3:e.atkType==='area'?3:2);
+    sessionGems+=gem; G.stageGems=(G.stageGems||0)+gem;
+    addParticles(uCX(e),e.y,e.isBoss?'#ffd740':'#aaa',e.isBoss?20:5,e.isBoss);
+  });
+  G.allies=G.allies.filter(a=>a.hp>0);
+  G.enemies=G.enemies.filter(e=>e.hp>0);
+  G.bullets=G.bullets.filter(b=>!b.done);
+  G.particles=G.particles.filter(p=>p.life>0);
+
+  // 霊玉チェック（Wave遷移の前に実行 → paused=trueになったらWave遷移はスキップされる）
+  checkGemUpgrade();
+
+  // 城壁HP0の処理
+  if(G.enCastleHp<=0&&!G.gameOver&&!G.paused){
+    // Wave1のみHP1で止める（ボス未出現中は城壁を守る）
+    if(G.wave===1){ G.enCastleHp=1; }
+    else if(G.wave===2||G.wave===3){
+      // Wave3の城壁破壊 → 夜クリア
+      if(gd.stage > (gd.clearedWave||0)) gd.clearedWave = gd.stage;
+      if(gd.stage<LAST_WAVE){
+        if(!autoMode) showWaveBreakBanner(gd.stage);
+        gd.stage++;
+        G.wave=1;
+        const sc=1+(gd.stage-1)*0.35+(gd.run-1)*0.6;
+        G.enCastleHp=Math.round(EN_CASTLE_BASE[Math.min(gd.stage-1,EN_CASTLE_BASE.length-1)]*sc);
+        G.enCastleMaxHp=G.enCastleHp;
+        G.bossSpawned=false;G.bossAlive=false;G.bossRoarTimer=0;G.enemies=[];G.bullets=[];
+      G.bossThreshold=0.4+Math.random()*0.2; // 次の夜のボス出現しきい値をリセット
+        G.allies.forEach(a=>{ a.y=MY_Y()-26; a.at=0; a.kbVY=0; });
+        G.normalSpawnInterval=70;G.normalSpawnTimer=100;
+        document.getElementById('boss-wrap').style.display='none';
+        document.getElementById('ehp-wrap').style.display='';
+        autoApplySpeed();
+        updateHUD();
+      }else{
+        if(LAST_WAVE > (gd.clearedWave||0)) gd.clearedWave = LAST_WAVE;
+        G.gameOver=true; G.gameWin=true; showResult(true);
+      }
+    }
+  }
+  if(G.myHp<=0&&!G.gameOver){G.gameOver=true;showResult(false);}
+  // 自動モード思考
+  if(autoMode){autoTimer++;if(autoTimer>=AUTO_INTERVAL){autoTimer=0;autoThink();}}
+  updateHUD();
+}
+
+// ========== DRAW ==========
+function draw(){
+  if(!G)return;
+  ctx2.save(); ctx2.translate(G.screenShake.x,G.screenShake.y);
+  ctx2.clearRect(-20,-20,CW+40,CH+40);
+
+  // 背景
+  const gbg=ctx2.createLinearGradient(0,0,0,CH);gbg.addColorStop(0,'#0a0a18');gbg.addColorStop(1,'#1a0a2e');
+  ctx2.fillStyle=gbg;ctx2.fillRect(0,0,CW,CH);
+  if(G.infiniteWave){ctx2.fillStyle=`rgba(160,0,0,${0.07+Math.sin(G.frame*0.04)*0.04})`;ctx2.fillRect(0,0,CW,CH);}
+  // 星
+  ctx2.fillStyle='rgba(255,255,200,0.45)';
+  [[30,10],[95,28],[185,7],[290,20],[385,10],[62,5],[320,34]].forEach(([x,y])=>{ctx2.beginPath();ctx2.arc(x*(CW/420),y,1,0,Math.PI*2);ctx2.fill();});
+  ctx2.fillStyle='rgba(255,240,180,0.7)';ctx2.beginPath();ctx2.arc(CW-35,28,14,0,Math.PI*2);ctx2.fill();
+  ctx2.fillStyle='#0a0a18';ctx2.beginPath();ctx2.arc(CW-29,23,11,0,Math.PI*2);ctx2.fill();
+  // レーン
+  ctx2.strokeStyle='rgba(255,255,255,0.06)';ctx2.lineWidth=1;
+  for(let i=1;i<LANES;i++){ctx2.beginPath();ctx2.moveTo(LW()*i,0);ctx2.lineTo(LW()*i,CH);ctx2.stroke();}
+  // 召喚エリア
+
+
+  // ドラッグハイライト
+  if(dragging&&dragLane>=0&&dragId){const ls=gc_def(dragId).laneSize;ctx2.fillStyle='rgba(120,255,120,0.1)';ctx2.fillRect(laneLeft(dragLane),0,LW()*ls,CH);}
+
+  // 城
+  const cx2=CW/2;
+  if(!G.infiniteWave){
+    const er=Math.max(0,G.enCastleHp/G.enCastleMaxHp);
+    ctx2.fillStyle='rgba(120,40,180,0.2)';ctx2.fillRect(0,EN_Y()-26,CW,30);
+    ctx2.strokeStyle='#9b59b6';ctx2.lineWidth=1.5;ctx2.strokeRect(0,EN_Y()-26,CW,30);
+    for(let i=0;i<10;i++){ctx2.fillStyle='#6c3483';ctx2.fillRect(i*Math.round(CW/10),EN_Y()-34,Math.round(CW/10)*0.6,10);}
+    ctx2.font='11px sans-serif';ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillStyle='rgba(200,150,255,0.8)';ctx2.fillText('💀 敵の城壁 💀',cx2,EN_Y()-11);
+    ctx2.fillStyle='rgba(0,0,0,0.4)';ctx2.fillRect(10,EN_Y()+7,CW-20,6);
+    ctx2.fillStyle=er>0.5?'#9b59b6':er>0.25?'#e67e22':'#e74c3c';ctx2.fillRect(10,EN_Y()+7,(CW-20)*er,6);
+    if(!G.bossSpawned){ctx2.strokeStyle='rgba(255,220,0,0.6)';ctx2.lineWidth=1;ctx2.setLineDash([3,3]);ctx2.beginPath();ctx2.moveTo(10+(CW-20)*0.5,EN_Y()+7);ctx2.lineTo(10+(CW-20)*0.5,EN_Y()+13);ctx2.stroke();ctx2.setLineDash([]);ctx2.font='8px sans-serif';ctx2.fillStyle='#ffd740';ctx2.textBaseline='alphabetic';ctx2.fillText(Math.round(G.bossThreshold*100)+'%→BOSS',cx2,EN_Y()+25);}
+    else{ctx2.font='8px sans-serif';ctx2.fillStyle='#ddd';ctx2.textBaseline='alphabetic';ctx2.fillText(Math.round(G.enCastleHp),cx2,EN_Y()+25);}
+  }else{
+    ctx2.fillStyle='rgba(140,0,0,0.14)';ctx2.fillRect(0,0,CW,EN_Y()+46);
+    const rem=Math.max(0,30-Math.round(G.infiniteSurviveTimer/60));
+    ctx2.font='10px sans-serif';ctx2.fillStyle='rgba(255,80,80,0.75)';ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillText(`⚠️ 最終夜 — 残り${rem}秒耐えろ！`,cx2,EN_Y()+16);
+  }
+  ctx2.fillStyle='rgba(40,180,90,0.14)';ctx2.fillRect(0,MY_Y()-26,CW,30);
+  ctx2.strokeStyle='#2ecc71';ctx2.lineWidth=1.5;ctx2.strokeRect(0,MY_Y()-26,CW,30);
+  for(let i=0;i<10;i++){ctx2.fillStyle='#1a8c4e';ctx2.fillRect(i*Math.round(CW/10),MY_Y()-34,Math.round(CW/10)*0.6,10);}
+  ctx2.font='11px sans-serif';ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillStyle='rgba(100,255,150,0.8)';ctx2.fillText('⛩️ 自城 ⛩️',cx2,MY_Y()-11);
+
+  // バフ状態表示
+  if(G.speedBuff>0){ctx2.font='10px sans-serif';ctx2.fillStyle='rgba(100,220,255,0.8)';ctx2.textAlign='left';ctx2.textBaseline='top';ctx2.fillText(`💨速度UP(${Math.ceil(G.speedBuff/60)}s)`,4,EN_Y()+32);}
+  if(G.speedDebuff>0){ctx2.font='10px sans-serif';ctx2.fillStyle='rgba(255,150,50,0.8)';ctx2.textAlign='right';ctx2.textBaseline='top';ctx2.fillText(`🐢敵遅延(${Math.ceil(G.speedDebuff/60)}s)`,CW-4,EN_Y()+32);}
+
+  // パーティクル
+  G.particles.forEach(p=>{ctx2.globalAlpha=p.life/p.maxLife*0.88;ctx2.fillStyle=p.col;ctx2.beginPath();ctx2.arc(p.x,p.y,p.big?4:2.5,0,Math.PI*2);ctx2.fill();});ctx2.globalAlpha=1;
+
+  // 弾
+  ctx2.textAlign='center';ctx2.textBaseline='middle';
+  G.bullets.forEach(b=>{ctx2.font='11px serif';ctx2.fillText(b.emoji,b.x,b.y);});
+
+  // HP bar描画
+  function drawHP(u){
+    const w=uW(u)-5,h=u.isBoss?6:u.laneSize>=2?4:3;
+    const fs=uFS(u);
+    // HPバーY位置:
+    //   敵ボス   → 敵城壁の直下に固定（EN_Y()+30付近）
+    //   敵通常   → キャラ下（fs*0.58）
+    //   味方2列  → キャラ上（fs*0.9）
+    //   味方1列  → キャラ上（fs*0.7）
+    let by;
+    if(u.isEnemy){
+      by = u.isBoss ? u.y+fs*0.35 : u.y+fs*0.58; // ボス: 紫枠の下辺
+    } else {
+      by = u.laneSize>=2 ? u.y-fs*0.9-h : u.y-fs*0.7-h-1;
+    }
+    const bx=uCX(u)-w/2;
+    ctx2.fillStyle='rgba(0,0,0,0.5)';ctx2.fillRect(bx,by,w,h);
+    const r2=Math.max(0,u.hp/u.maxHp);
+    if(u.isEnemy){
+      ctx2.fillStyle=u.invincible>0?'#88ddff':r2>0.5?'#7d3c98':r2>0.25?'#5b2c6f':'#4a235a';
+    }else{
+      ctx2.fillStyle=u.invincible>0?'#88ddff':r2>0.5?'#2ecc71':r2>0.25?'#f39c12':'#e74c3c';
+    }
+    ctx2.fillRect(bx,by,w*r2,h);
+    if(u.isBoss||u.laneSize>=2){
+      ctx2.font='7px sans-serif';ctx2.fillStyle='#ffd740';ctx2.textAlign='center';
+      ctx2.textBaseline=u.isEnemy?'top':'alphabetic';
+      ctx2.fillText(u.name||'',uCX(u),u.isEnemy?by+h+1:by-1);
+    }
+    // 凍結表示
+    if(u.frozen>0){ctx2.font='9px serif';ctx2.textBaseline='middle';ctx2.fillText('❄️',uCX(u),u.y-fs*0.85);}
+  }
+
+  // 味方
+  G.allies.sort((a,b)=>a.y-b.y).forEach(u=>{ctx2.font=uFS(u)+'px serif';ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillText(u.emoji,uCX(u),u.y);drawHP(u);});
+  // 敵（ボス後）
+  G.enemies.filter(e=>!e.isBoss).sort((a,b)=>b.y-a.y).forEach(e=>{ctx2.font=uFS(e)+'px serif';ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillText(e.emoji,uCX(e),e.y);drawHP(e);});
+  G.enemies.filter(e=>e.isBoss).forEach(e=>{
+    const t2=G.frame*0.07;ctx2.strokeStyle=`rgba(${220+Math.sin(t2)*30},${20+Math.sin(t2+1)*15},${200+Math.sin(t2+2)*30},0.65)`;ctx2.lineWidth=3;ctx2.strokeRect(0,e.y-uFS(e)*0.75,CW,uFS(e)*1.1);
+    ctx2.font=uFS(e)+'px serif';ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillText(e.emoji,uCX(e),e.y);drawHP(e);
+  });
+  // ボスイントロ
+  if(G.bossIntro.active){const al=Math.min(1,G.bossIntro.timer/30);ctx2.save();ctx2.globalAlpha=al;ctx2.fillStyle='rgba(180,0,0,0.22)';ctx2.fillRect(0,CH/2-34,CW,68);ctx2.strokeStyle='rgba(220,50,50,0.55)';ctx2.lineWidth=1.5;ctx2.strokeRect(0,CH/2-34,CW,68);ctx2.font=`bold ${Math.round(CW*0.04)}px sans-serif`;ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillStyle='#ff4444';ctx2.fillText(G.bossIntro.text,CW/2,CH/2);ctx2.restore();}
+
+  ctx2.restore();
+}
+
+function loop(){
+  // 倍速モード時は update を2回呼ぶ（描画は1回）
+  const spd = gameSpeed();
+  for(let i=0;i<spd;i++){
+    if(!G||G.gameOver||G.paused) break;
+    update();
+  }
+  draw();
+  if(G&&!G.gameOver) rid=requestAnimationFrame(loop);
+}
+
+function startGame(){
+  gd.trainableIds=[...deployedIds];
+
+  // Waveスキップのコスト確認
+  const sel=document.getElementById('wave-select');
+  const startStage=sel?(parseInt(sel.value)||1):1;
+  skipWaveCount=startStage-1;
+  // スキップは魔石消費なし・強化ボーナスのみ
+  if(skipWaveCount>0){
+    if(!confirm('第'+startStage+'夜からスタートします。\n追加強化+'+skipWaveCount+'回')) return;
+  }
+  resizeCanvas();
+  showScreen('game-screen');
+  updateAutoBtn();
+  autoApplySpeed();
+  updateSpeedBtn();
+  setTimeout(()=>{
+    resizeCanvas();
+    initG();
+    // スキップしたステージから開始
+    if(startStage>1){
+      gd.stage=startStage;
+      G.wave=1;
+      const sc=1+(gd.stage-1)*0.35+(gd.run-1)*0.6;
+      G.enCastleHp=Math.round(EN_CASTLE_BASE[Math.min(gd.stage-1,EN_CASTLE_BASE.length-1)]*sc);
+      G.enCastleMaxHp=G.enCastleHp;
+    }
+    renderUnitCards();
+    updateHUD();
+    if(rid) cancelAnimationFrame(rid);
+    // 出陣前強化（通常1回 + スキップ分）
+    G.paused=true;
+    const totalBonus=1+skipWaveCount;
+    runUpgradeChain(totalBonus,()=>{ G.paused=false; loop(); });
+  },60);
+}
+
+// 強化をn回連続して開く
+function runUpgradeChain(n,onDone){
+  if(n<=0){ onDone(); return; }
+  // プールが空（全員必殺技解放済み）ならスキップ
+  if(buildUpgradePool().length===0){ onDone(); return; }
+  document.getElementById('up-info').textContent='出陣前の強化！（残り'+n+'回）';
+  openUpgradePanel(()=>{ runUpgradeChain(n-1,onDone); });
+}
+
+function resizeCanvas(){
+  const wrap=document.getElementById('canvas-wrap');
+  CW=wrap.clientWidth||380;
+  CH=Math.max(220,wrap.clientHeight||280);
+  cv.width=CW; cv.height=CH;
+  if(G){G.CW=CW;G.CH=CH;}
+}
+
+// ========== リザルト ==========
+function showResult(win){
+  if(rid) cancelAnimationFrame(rid);
+  setAutoMode(false); // リザルト画面に入ったら自動を解除
+  setSpeedMode(false); // リザルト時に倍速をOFF
+  document.getElementById('res-emoji').textContent=win?'🎉':'💀';
+  document.getElementById('res-title').textContent=win?'ステージクリア！':'お社が滅んだ…';
+  document.getElementById('res-title').style.color=win?'#ffd740':'#e74c3c';
+  const clearBonus=win?30:0;
+  const gems=(G.stageGems||0)+clearBonus;
+  document.getElementById('res-stats').innerHTML=`調伏数: ${G.stageKills}体<br>Wave: ${G.wave}<br>霊玉獲得: ${gems}`;
+  document.getElementById('res-gems').textContent='';
+  const nb=document.getElementById('res-next');
+  const backBtn=document.getElementById('res-back-btn');
+  if(win){
+    clearGameSave(); // クリア時はセーブ不要
+    nb.style.display='';
+    nb.textContent=gd.stage>=LAST_WAVE?'周回する ↺':'次のステージ ▶';
+    if(backBtn){ backBtn.textContent='編成に戻る'; backBtn.onclick=()=>showFormation(); }
+  }else{
+    nb.style.display='none';
+    // 敗北時: セーブデータ削除 + リセット
+    clearGameSave();
+    gd.stage=1; gd.run=1;
+    gd.chars=CHAR_DEFS.map(c=>({id:c.id, lv:getBaseLevel(c.id), hasUlt:false}));
+    if(backBtn){ backBtn.textContent='育成する 🌱'; backBtn.onclick=()=>showTraining(); }
+  }
+  // resGems にセッション霊玉を保存（育成画面で使う）
+  const _stageGems=(G?G.stageGems||0:0);
+  const _exchBonus=Math.round(_stageGems*exchGemBonus/100);
+  resGems = _stageGems + clearBonus + _exchBonus;
+  // exchGemBonusをリセット（次バトル用）
+  exchGemBonus=0;
+  showScreen('result-screen');
+  // 自動モードなら自動で次へ
+  if(autoMode){
+    if(win){
+      setTimeout(()=>nextStage(), 1500);
+    } else {
+      setTimeout(()=>startGame(), 1500);
+    }
+  }
+}
+function nextStage(){
+  if(gd.stage>=LAST_WAVE){gd.stage=1;gd.run++;}else{gd.stage++;}
+  if(autoMode){
+    startGame(); // 編成画面スキップ
+  } else {
+    showFormation();
+  }
+}
+
+
+// ========== 中断セーブ・続きから ==========
+const SAVE_KEY_GAME = 'hyakki_save_game';
+
+// 中断時にゲーム状態をLocalStorageに保存
+function saveGameState(){
+  if(!G) return;
+  const save = {
+    stage:    gd.stage,
+    run:      gd.run,
+    wave:     G.wave,
+    myHp:     G.myHp,
+    myMaxHp:  G.myMaxHp,
+    enCastleHp:    G.enCastleHp,
+    enCastleMaxHp: G.enCastleMaxHp,
+    infiniteWave:  G.infiniteWave,
+    stageGems:     G.stageGems||0,
+    sessionGems:   sessionGems,
+    lastUpgradeGems: lastUpgradeGems,
+    deployedIds: [...deployedIds],
+    // キャラLv・hasUlt（ゲーム中に強化された分も含む）
+    chars: gd.chars.map(c=>({id:c.id, lv:c.lv, hasUlt:c.hasUlt})),
+    // 必殺技のready状態
+    ultReady: {...G.ultReady},
+    // CDタイマー（リセットして召喚可能にする）
+    bossDefeated: !G.bossAlive && G.bossSpawned,
+    savedAt: Date.now(),
+  };
+  localStorage.setItem(SAVE_KEY_GAME, JSON.stringify(save));
+}
+
+// セーブデータを削除
+function clearGameSave(){
+  localStorage.removeItem(SAVE_KEY_GAME);
+}
+
+// セーブデータを読み込んで確認
+function loadGameSave(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY_GAME);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+
+// タイトル画面表示時に「続きから」ボタンの表示を更新
+function updateContinueBtn(){
+  const save = loadGameSave();
+  const wrap = document.getElementById('continue-wrap');
+  const info = document.getElementById('continue-info');
+  if(!wrap) return;
+  if(save){
+    wrap.style.display='flex';
+    const waveLabel = save.infiniteWave ? '最終夜' : `Wave ${save.wave}`;
+    const hpPct = Math.round(save.myHp/save.myMaxHp*100);
+    info.textContent = `第${save.stage}夜 / ${waveLabel} / 自城HP ${hpPct}%`;
+  }else{
+    wrap.style.display='none';
+  }
+}
+
+// 「続きから」でゲームを再開
+function resumeGame(){
+  const save = loadGameSave();
+  if(!save){ updateContinueBtn(); return; }
+
+  // gdを復元
+  gd.stage = save.stage;
+  gd.run   = save.run;
+  gd.chars = save.chars.map(c=>({...c}));
+
+  // deployedIds を復元
+  deployedIds = [...save.deployedIds];
+
+  // 画面を切り替えてゲーム初期化
+  resizeCanvas();
+  showScreen('game-screen');
+  updateAutoBtn();
+
+  setTimeout(()=>{
+    resizeCanvas();
+
+    // G を手動で初期化（通常の initG をベースに復元値を上書き）
+    initG();
+
+    // initG が sessionGems/lastUpgradeGems をリセットするので initG の後に復元
+    sessionGems      = save.sessionGems;
+    lastUpgradeGems  = save.lastUpgradeGems;
+
+    // セーブデータで上書き（initGがリセットした値を復元）
+    G.wave         = save.wave;
+    G.myHp         = save.myHp;
+    G.myMaxHp      = save.myMaxHp;
+    G.enCastleHp   = save.enCastleHp;
+    G.enCastleMaxHp= save.enCastleMaxHp;
+    G.infiniteWave = save.infiniteWave;
+    G.stageGems    = save.stageGems;
+    G.bossSpawned  = save.bossDefeated ? true  : false;
+    G.bossAlive    = save.bossDefeated ? false : false;
+    // ultReady を復元
+    Object.assign(G.ultReady, save.ultReady||{});
+
+    // セーブデータを削除（再開したので不要）
+    clearGameSave();
+
+    renderUnitCards();
+    updateHUD();
+
+    if(rid) cancelAnimationFrame(rid);
+    // 再開前に強化は出さない（中断時点から続ける）
+    G.paused=false;
+    loop();
+  },60);
+}
+
+
+// ========== 戦闘中断 ==========
+function abortGame(){
+  const gs = document.getElementById('game-screen');
+  if(!gs || !gs.classList.contains('active')) return;
+  if(!confirm('戦闘を中断しますか？\n（現在の状態を保存します）')) return;
+  if(rid){ cancelAnimationFrame(rid); rid=null; }
+  setAutoMode(false);
+  // 強化パネルが開いていれば閉じる
+  document.getElementById('upgrade-panel').classList.remove('show');
+  // ゲーム状態を保存
+  saveGameState();
+  if(G){ G.gameOver=true; G.paused=false; }
+  // タイトル画面へ（「続きから」ボタンを表示するため）
+  updateContinueBtn();
+  showScreen('title-screen');
+}
+
+
+// ========== 育成システム ==========
+// 霊玉コスト (インデックス = 現在Lv-1、つまり[0]=Lv1→2のコスト)
+const LV_COST=[300,600,1000,1500,2000];
+
+// 永続霊玉（LocalStorageに保存）
+function loadTotalGems(){ return parseInt(localStorage.getItem('hyakki_gems')||'0'); }
+function saveTotalGems(v){ localStorage.setItem('hyakki_gems', String(v)); }
+function addTotalGems(n){
+  const cur = loadTotalGems();
+  saveTotalGems(cur + n);
+}
+
+// 永続キャラLv（LocalStorageに保存）
+// {kappa:2, tengu:1, ...} の形で保存
+function loadBaseLevels(){
+  try{ return JSON.parse(localStorage.getItem('hyakki_levels')||'{}'); }
+  catch(e){ return {}; }
+}
+function saveBaseLevels(obj){ localStorage.setItem('hyakki_levels', JSON.stringify(obj)); }
+function getBaseLevel(id){
+  const levels = loadBaseLevels();
+  return levels[id]!==undefined?levels[id]:0;
+}
+function setBaseLevel(id, lv){
+  const levels = loadBaseLevels();
+  levels[id] = lv;
+  saveBaseLevels(levels);
+}
+
+// ゲーム開始時に永続Lvをgd.charsに反映
+function applyBaseLevels(){
+  const levels = loadBaseLevels();
+  gd.chars.forEach(c=>{
+    c.lv=levels[c.id]!==undefined?levels[c.id]:0;
+  });
+}
+
+// ---- 育成画面表示 ----
+function showTraining(){
+  // resGems はリザルトで設定済みの値をそのまま引き継ぐ
+  // （renderResultTraining で resGems = G.stageGems||0 が設定されている）
+  const sv=document.getElementById('training-stone-val');
+  if(sv) sv.textContent=loadMagicStones().toLocaleString();
+  renderTrainingList(); // resGems を使って描画
+  showScreen('training-screen');
+}
+
+function renderTrainingList(){
+  // セッション霊玉（resGems）を使う
+  document.getElementById('training-gem-val').textContent = resGems.toLocaleString();
+
+  const list = document.getElementById('training-list');
+  list.innerHTML = '';
+
+  const _trainTargets=gd.trainableIds.length>0?gd.trainableIds.map(id=>gc_def(id)).filter(Boolean):CHAR_DEFS;
+  _trainTargets.forEach(def=>{
+    const baseLv = getBaseLevel(def.id);
+    const isMax = baseLv >= def.lvLimit;
+    const cost=isMax?null:LV_COST[baseLv];
+    const canAfford=cost!==null&&resGems>=cost;
+
+    const curHp  = Math.round(def.baseHp  * (1+(baseLv-1)*0.14));
+    const curAtk = Math.round(def.baseAtk * (1+(baseLv-1)*0.14));
+    const nextHp  = !isMax ? Math.round(def.baseHp  * (1+(baseLv)*0.14)) : null;
+    const nextAtk = !isMax ? Math.round(def.baseAtk * (1+(baseLv)*0.14)) : null;
+
+    const card = document.createElement('div');
+    card.className = 'train-card';
+
+    const costText = isMax
+      ? '<span class="train-cost maxed">最大レベル到達</span>'
+      : `<span class="train-cost ${canAfford?'can-afford':''}">💎 ${cost.toLocaleString()} 霊玉 → HP:${curHp}→${nextHp} / ATK:${curAtk}→${nextAtk}</span>`;
+
+    const btnText = isMax ? 'MAX' : `Lv${baseLv}→${baseLv+1}`;
+    card.innerHTML = `
+      <span class="train-emoji">${def.emoji}</span>
+      <div class="train-info">
+        <div class="train-name">${def.name}</div>
+        <div class="train-lv">初期Lv ${baseLv} / 上限 Lv${def.lvLimit}</div>
+        <div class="train-stats">HP ${curHp} / ATK ${curAtk} / 速度 ${def.spd} / 射程 ${def.range}</div>
+        ${costText}
+      </div>
+      <button class="train-btn ${isMax?'maxed':''}" ${(!canAfford&&!isMax)?'disabled':''} ${isMax?'disabled':''} onclick="trainChar('${def.id}')">${btnText}</button>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function trainChar(id){
+  const def = gc_def(id);
+  const baseLv = getBaseLevel(id);
+  if(baseLv >= def.lvLimit) return;
+  const cost=LV_COST[baseLv];
+  if(resGems<cost) return;
+  resGems -= cost;
+  setBaseLevel(id, baseLv + 1);
+  // gd.chars にも反映
+  const dat = gc_data(id);
+  if(dat) dat.lv = baseLv + 1;
+  renderTrainingList();
+}
+
+// ---- リセット ----
+function confirmReset(){
+  if(confirm('育成データ（レベル・霊玉・魔石）をリセットしますか？\nこの操作は元に戻せません。')){
+    localStorage.removeItem('hyakki_gems');
+    localStorage.removeItem('hyakki_levels');
+    localStorage.removeItem('hyakki_stones');
+    // gd.charsも初期化
+    gd.chars=CHAR_DEFS.map(c=>({id:c.id, lv:0, hasUlt:false}));
+    alert('リセットしました。');
+    // 育成画面が開いていれば再描画
+    const ts = document.getElementById('training-screen');
+    if(ts && ts.classList.contains('active')) renderTrainingList();
+  }
+}
+
+
+// ========== 倍速システム ==========
+// 育成画面で霊玉500を消費して取得（毎回1回のみ）
+// 取得したセッション中のみ有効。突破済みWave(gd.clearedWave)まで自動で2倍速
+
+const SPEED_COST = 500; // 倍速購入コスト
+
+let speedMode = false; // 倍速ON/OFF（ゲーム中にトグル可能）
+
+// buySpeed: 削除済み（魔石システムに移行）
+
+
+function toggleSpeed(){
+  const cleared = gd.clearedWave || 0;
+  if(!G || gd.stage > cleared){
+    showTopNotify('⚡ 突破済みステージのみ倍速が使えます');
+    return;
+  }
+  setSpeedMode(!speedMode);
+}
+let topNotifyTimer=null;
+function showTopNotify(msg){
+  const el=document.getElementById('top-notify');
+  if(!el) return;
+  el.textContent=msg;
+  el.style.display='block';
+  if(topNotifyTimer) clearTimeout(topNotifyTimer);
+  topNotifyTimer=setTimeout(()=>{ el.style.display='none'; },2500);
+}
+function setSpeedMode(val){
+  speedMode = val;
+  updateSpeedBtn();
+}
+function updateSpeedBtn(){
+  const btn = document.getElementById('speed-btn');
+  if(!btn) return;
+  const cleared = gd.clearedWave || 0;
+  const available = G && gd.stage <= cleared;
+  btn.classList.toggle('on', speedMode && available);
+  btn.textContent = speedMode && available ? '⚡ ON' : '⚡ 2x';
+  btn.style.opacity = available ? '1' : '0.4';
+  btn.title = available ? '倍速ON/OFF' : '突破済みステージのみ使用可能';
+}
+
+// 出撃時に倍速状態をリセット（突破済みWaveなら手動でON/OFFできる）
+function autoApplySpeed(){
+  setSpeedMode(false); // 出撃時は常にOFFから始める
+}
+
+// ゲームの速度倍率を返す
+function gameSpeed(){ const cleared=gd.clearedWave||0; return (speedMode && G && gd.stage<=cleared) ? 2 : 1; }
+
+// ========== Wave間中断バナー ==========
+let waveBreakTimer = null;
+let waveBreakRemain = 0;
+
+function showWaveBreakBanner(waveNum){
+  const banner = document.getElementById('wave-break-banner');
+  const title  = document.getElementById('wbb-title');
+  if(!banner) return;
+  title.textContent = `第${waveNum}夜 クリア！ → 第${waveNum+1}夜へ`;
+  banner.classList.add('show');
+  // ゲームを一時停止して「準備OK」待ち
+  if(G) G.paused = true;
+}
+
+// 「準備OK」ボタン押下 → 次Wave開始
+function resumeFromBreak(){
+  hideWaveBreakBanner();
+  if(G){ G.paused = false; }
+}
+
+function hideWaveBreakBanner(){
+  if(waveBreakTimer){ clearInterval(waveBreakTimer); waveBreakTimer=null; }
+  const banner = document.getElementById('wave-break-banner');
+  if(banner) banner.classList.remove('show');
+  if(G && G.paused) G.paused = false;
+}
+
+// Wave間バナーの「ここで中断する」ボタン
+function abortFromBreak(){
+  hideWaveBreakBanner();
+  // セーブしてタイトルへ
+  saveGameState();
+  if(G){ G.gameOver=true; G.paused=false; }
+  if(rid){ cancelAnimationFrame(rid); rid=null; }
+  setAutoMode(false);
+  document.getElementById('upgrade-panel').classList.remove('show');
+  updateContinueBtn();
+  showScreen('title-screen');
+}
+
+const LAST_WAVE_CONST=3;
+
+
+// ========== 魔石システム ==========
+// 1霊玉 = 1魔石（リザルト画面で余った霊玉を変換）
+function loadMagicStones(){ return parseInt(localStorage.getItem('hyakki_stones')||'0'); }
+function saveMagicStones(v){ localStorage.setItem('hyakki_stones', String(Math.max(0,v))); }
+function addMagicStones(n){ saveMagicStones(loadMagicStones()+n); }
+function spendMagicStones(n){
+  const cur=loadMagicStones();
+  if(cur<n) return false;
+  saveMagicStones(cur-n);
+  return true;
+}
+
+// ========== リザルト画面の育成 ==========
+let resGems = 0; // リザルト画面での残り霊玉
+
+function renderResultTraining(){
+  if(!G) return;
+  resGems = G.stageGems||0;
+  updateResGemsDisplay();
+  const list = document.getElementById('res-train-list');
+  if(!list) return;
+  list.innerHTML = '';
+  CHAR_DEFS.forEach(def=>{
+    const dat = gc_data(def.id);
+    const isMax = dat.lv >= def.lvLimit;
+    const cost=isMax?null:LV_COST[dat.lv];
+    const canAfford = cost!==null && resGems>=cost;
+    const row = document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);';
+    row.innerHTML=`<span style="font-size:18px;">${def.emoji}</span>
+      <span style="flex:1;font-size:11px;color:#fff;">${def.name} <span style="color:#ffd740;">Lv${dat.lv}</span></span>
+      ${isMax
+        ? '<span style="font-size:10px;color:#888;">MAX</span>'
+        : `<span style="font-size:10px;color:${canAfford?'#2ecc71':'#888'};">💎${cost}</span>
+           <button onclick="resTrainChar('${def.id}')" ${canAfford?'':'disabled'}
+             style="padding:3px 8px;border:none;border-radius:5px;background:${canAfford?'linear-gradient(135deg,#8e44ad,#c0392b)':'rgba(255,255,255,0.1)'};color:#fff;font-size:10px;font-family:inherit;cursor:${canAfford?'pointer':'not-allowed'};touch-action:manipulation;">強化</button>`
+      }`;
+    list.appendChild(row);
+  });
+  const rs=document.getElementById('res-stones'); if(rs) rs.textContent=loadMagicStones().toLocaleString();
+}
+
+function resTrainChar(id){
+  const def = gc_def(id), dat = gc_data(id);
+  if(dat.lv >= def.lvLimit) return;
+  const cost=LV_COST[dat.lv];
+  if(resGems<cost) return;
+  resGems -= cost;
+  dat.lv = Math.min(dat.lv+1, def.lvLimit);
+  setBaseLevel(id, dat.lv);
+  updateResGemsDisplay();
+  renderResultTraining();
+}
+
+function updateResGemsDisplay(){
+  const el = document.getElementById('res-gems-left');
+  if(el) el.textContent = resGems.toLocaleString();
+}
+
+function convertToStones(){
+  if(resGems <= 0){ showTopNotify('変換できる霊玉がありません'); return; }
+  addMagicStones(resGems);
+  resGems = 0;
+  updateResGemsDisplay();
+  const rs=document.getElementById('res-stones'); if(rs) rs.textContent=loadMagicStones().toLocaleString();
+  showTopNotify('💠 魔石に変換しました');
+}
+
+// 育成画面「編成へ」: 残り霊玉を魔石に変換してから編成画面へ
+function convertAndGoFormation(){
+  const remaining = resGems;
+  if(remaining > 0){
+    addMagicStones(remaining);
+    resGems = 0;
+    alert('💠 余った霊玉' + remaining + '個を魔石に変換しました。');
+  }
+  showFormation();
+}
+
+
+// ========== Waveスキップ ==========
+let skipWaveCount = 0; // スキップするWave数
+
+function renderWaveSelect(){
+  const sel = document.getElementById('wave-select');
+  if(!sel) return;
+  // 突破済みステージまで選択可能（clearedWave = 突破済みステージ数）
+  const cleared = gd.clearedWave || 0;
+  sel.innerHTML = '';
+  for(let s=1; s<=Math.max(1, cleared); s++){
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  }
+  sel.value = 1;
+  updateWaveSelectCost();
+}
+
+function updateWaveSelectCost(){
+  const sel = document.getElementById('wave-select');
+  const info = document.getElementById('wave-skip-info');
+  if(!sel||!info) return;
+  const startStage = parseInt(sel.value)||1;
+  skipWaveCount = startStage - 1;
+  const stones = loadMagicStones();
+  const cost = skipWaveCount * 100;
+  if(skipWaveCount <= 0){
+    info.textContent = '';
+  } else {
+    info.textContent = `無料スキップ / +${skipWaveCount}回強化`;
+    info.style.color = '#2ecc71';
+  }
+}
+// ========== 自動モード ==========
+let autoMode = false;
+let autoTimer = 0;
+const AUTO_INTERVAL = 45; // 約0.75秒ごとに判断
+
+function toggleAuto(){
+  autoMode = !autoMode;
+  updateAutoBtn();
+  if(autoMode && G && !G.gameOver && !G.paused) autoThink();
+}
+function setAutoMode(val){ autoMode=val; updateAutoBtn(); }
+function updateAutoBtn(){
+  const btn=document.getElementById('auto-battle-btn');
+  if(!btn) return;
+  btn.textContent = autoMode ? '🤖 ON' : '🤖 自動';
+  btn.classList.toggle('on', autoMode);
+}
+
+
+
+// 強化の自動選択（優先度: 必殺技 > 城壁回復 > Lvアップ > 城壁強化）
+function autoPickUpgrade(choices){
+  const ultC  = choices.find(c=>c.name.includes('必殺技'));
+  const healC = choices.find(c=>c.name.includes('回復'));
+  const lvC   = choices.find(c=>c.name.includes('強化')&&!c.name.includes('城壁'));
+  const wallC = choices.find(c=>c.name.includes('城壁強化'));
+  if(ultC)                             return ultC;
+  if(healC && G && G.myHp/G.myMaxHp<0.5) return healC;
+  if(lvC)                              return lvC;
+  if(wallC)                            return wallC;
+  return choices[0];
+}
+
+// レーンごとの脅威度計算
+function getAutoThreats(){
+  const t=new Array(LANES).fill(0);
+  if(!G) return t;
+  G.enemies.forEach(e=>{
+    const threat=(e.hp/e.maxHp)*(1+(MY_Y()-e.y)/MY_Y());
+    occupiedLanes(e).forEach(l=>{t[l]+=threat;});
+  });
+  return t;
+}
+function autoMostThreatenedLane(threats,laneSize){
+  let best=0,bs=-1;
+  for(let l=0;l<=LANES-laneSize;l++){
+    let s=0; for(let i=0;i<laneSize;i++) s+=threats[l+i];
+    if(s>bs){bs=s;best=l;}
+  }
+  return best;
+}
+function autoOpenLane(threats){
+  const al=new Array(LANES).fill(0);
+  if(G) G.allies.forEach(a=>occupiedLanes(a).forEach(l=>al[l]++));
+  let best=0,bs=Infinity;
+  for(let l=0;l<LANES;l++){
+    const s=al[l]+threats[l]*0.5;
+    if(s<bs){bs=s;best=l;}
+  }
+  return best;
+}
+
+// AI思考メイン（フェーズ判定 + 積極召喚）
+function autoThink(){
+  if(!G||G.gameOver||G.paused||!autoMode) return;
+
+  const threats = getAutoThreats();
+  const boss    = G.enemies.find(e=>e.isBoss);
+  const myR     = G.myHp/G.myMaxHp;
+  const ec      = G.enemies.length;
+  const ac      = G.allies.length;
+
+  // ---- フェーズ判定 ----
+  // emergency: 自城HP 40%以下
+  // boss:      ボス出現中
+  // pressure:  敵が4体以上 or 自城HP 60%以下
+  // normal:    それ以外
+  const phase = myR<=0.4 ? 'emergency'
+              : boss      ? 'boss'
+              : (ec>=4||myR<=0.6) ? 'pressure'
+              : 'normal';
+
+  // ---- 必殺技判断（フェーズ別） ----
+  deployedIds.forEach(id=>{
+    if(!G.ultReady[id]) return;
+    const def=gc_def(id);
+    let fire=false;
+
+    switch(phase){
+      case 'emergency':
+        // 緊急時: 無敵・回復系は即発動、攻撃系も使い惜しみしない
+        if(id==='kitsune'||id==='kirin') fire=true;
+        if(id==='oni'||id==='tanuki'||id==='hebi') fire=true; // ダメージで敵を減らす
+        if(id==='kappa') fire=true; // ノックバックで稼ぐ
+        break;
+      case 'boss':
+        // ボス戦: 全員使う
+        fire=true;
+        break;
+      case 'pressure':
+        // プレッシャー: 攻撃・遅延系を優先
+        if(id==='ryu'&&ec>=2)  fire=true; // 凍結
+        if(id==='oni'&&ec>=3)  fire=true; // 範囲ダメ
+        if(id==='tengu'&&!G.speedDebuff) fire=true; // 速度操作
+        if(id==='kappa'&&ec>=3) fire=true; // ノックバック
+        if((id==='tanuki'||id==='hebi')&&ec>=4) fire=true;
+        if(myR<=0.5&&(id==='kitsune'||id==='kirin')) fire=true;
+        break;
+      case 'normal':
+        // 通常: 溜めておく（ただし敵が増えてきたら使う）
+        if(id==='ryu'&&ec>=3)  fire=true;
+        if(id==='oni'&&ec>=5)  fire=true;
+        if(id==='tengu'&&boss) fire=true;
+        break;
+    }
+    if(fire) fireUlt(id);
+  });
+
+  // ---- 召喚判断（積極的に・レーンカバー重視） ----
+  // 現在の各レーンに何体味方がいるか
+  const allyPerLane=new Array(LANES).fill(0);
+  G.allies.forEach(a=>occupiedLanes(a).forEach(l=>allyPerLane[l]++));
+
+  // 最もカバーが薄いレーン
+  function leastCoveredLane(laneSize, idxHint){
+    // まず最小カバー数を探す
+    let minScore=Infinity;
+    for(let l=0;l<=LANES-laneSize;l++){
+      let s=0;for(let i=0;i<laneSize;i++)s+=allyPerLane[l+i];
+      if(s<minScore) minScore=s;
+    }
+    // 同スコアのレーンが複数あればidxHintで分散させる
+    const candidates=[];
+    for(let l=0;l<=LANES-laneSize;l++){
+      let s=0;for(let i=0;i<laneSize;i++)s+=allyPerLane[l+i];
+      if(s===minScore) candidates.push(l);
+    }
+    if(candidates.length===1) return candidates[0];
+    // idxHint がある場合はそのインデックスに対応するcandidateを選択
+    if(idxHint!==undefined) return candidates[idxHint % candidates.length];
+    return candidates[0];
+  }
+
+  deployedIds.forEach((id,idxInDeploy)=>{
+    if(G.cdTimers[id]>0) return;
+    const def=gc_def(id);
+    if(!def||G.fieldCount[id]>=def.maxField) return;
+
+    let spawn=false, tLane=0;
+    const isTank   = def.laneSize>=2 && def.baseHp>=600; // 鬼・龍神など
+    const isRanged = def.range>=100;                      // 天狗・九尾・龍神
+    const isSpeed  = def.spd>=1.0;                        // 天狗・白蛇
+
+    switch(phase){
+      case 'emergency':
+        // 緊急: 全員出す（とにかく壁を増やす）
+        spawn=true;
+        tLane=leastCoveredLane(def.laneSize, idxInDeploy);
+        break;
+      case 'boss':
+        // ボス戦: タンクはボス正面、遠距離は脅威レーン
+        spawn=true;
+        tLane=isTank ? 0 : autoMostThreatenedLane(threats,def.laneSize);
+        break;
+      case 'pressure':
+        // プレッシャー: 前線が薄いレーンを優先、maxFieldの7割まで出す
+        if(G.fieldCount[id] < Math.ceil(def.maxField*0.7)){
+          spawn=true;
+          tLane=autoMostThreatenedLane(threats,def.laneSize);
+        }
+        break;
+      case 'normal':
+        // 通常: 各キャラ最低1体は維持、空きレーンを埋める
+        if(G.fieldCount[id]===0){
+          spawn=true;
+          // 初回はキャラ順でレーンを分散
+          const idxInDeploy=deployedIds.indexOf(id);
+          const denom=Math.max(1,deployedIds.length-1);
+          const baseL=Math.round((idxInDeploy/denom)*(LANES-def.laneSize));
+          tLane=Math.max(0,Math.min(LANES-def.laneSize,baseL));
+        } else if(isSpeed && G.fieldCount[id]<2){
+          // 速い妖怪（偵察役）は2体まで常に維持
+          spawn=true;
+          tLane=leastCoveredLane(def.laneSize, idxInDeploy);
+        } else if(ac<LANES && G.fieldCount[id]<Math.ceil(def.maxField*0.5)){
+          // 前線が手薄なら補充
+          spawn=true;
+          tLane=leastCoveredLane(def.laneSize, idxInDeploy);
+        }
+        break;
+    }
+
+    if(spawn){
+      const lane=Math.max(0,Math.min(LANES-def.laneSize,tLane));
+      spawnAlly(id,lane,MY_Y()-26); // 自城城壁ライン上に固定
+    }
+  });
+}
+
+</script>
+</body>
+</html>
