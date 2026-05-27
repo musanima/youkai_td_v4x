@@ -563,15 +563,21 @@ function buildUpgradePool(){
     const def=gc_def(id), dat=gc_data(id);
     // キャラ強化（上限未達のみ）
     if((charBoostPct[id]||0)<1000){
+      // 次回召喚時のHP・ATK（現在のlvMult × charBoostPct考慮）
+      const _m=lvMult(gc_data(id).lv);
+      const _hp=Math.round(def.baseHp*_m*(1+(charBoostPct[id]||0)/100));
+      const _atk=Math.round(def.baseAtk*_m*(1+(charBoostPct[id]||0)/100));
+      const _hpNext=Math.round(def.baseHp*_m*(1+((charBoostPct[id]||0)+1)/100));
+      const _atkNext=Math.round(def.baseAtk*_m*(1+((charBoostPct[id]||0)+1)/100));
       pool.push({
         icon:def.emoji,
         name:`${def.name} 強化`,
-        desc:'HP・ATK +1%UP',
+        desc:`HP ${_hp}→${_hpNext} / ATK ${_atk}→${_atkNext}`,
         cost:1,
         isCharBoost:true,
         charId:id,
-        closeAfter:false, // タップしてもパネルを閉じない
-        apply:()=>{ useCharBoost(id,1); } // 1ptで1%
+        closeAfter:false,
+        apply:()=>{ useCharBoost(id,1); }
       });
     }
     // 必殺技付与（未解放のみ）
@@ -1006,6 +1012,8 @@ function openUpgradePanel(onDone){
 }
 
 // 3択を表示してpt消費で選ぶパネル
+let _autoPickTimer=null;
+
 function _openUpgradePanelChoices(){
   const pool=buildUpgradePool();
   const choices=pickRandom3(pool);
@@ -1016,23 +1024,35 @@ function _openUpgradePanelChoices(){
   renderChoicesPanel(choices);
   document.getElementById('upgrade-panel').classList.add('show');
   if(autoMode){
-    function autoPickLoop(){
-      const affordable=choices.filter(u=>upgradePoints>=u.cost);
-      if(affordable.length===0){ closeUpgradePanelDone(_legacyOnDone); return; }
-      const pick=affordable[Math.floor(Math.random()*affordable.length)];
-      pick.apply();
-      updateUpgradePointHUD(); renderUnitCards();
-      setTimeout(autoPickLoop, 300);
-    }
-    setTimeout(autoPickLoop, 800);
+    if(_autoPickTimer){ clearTimeout(_autoPickTimer); _autoPickTimer=null; }
+    // 最初は3秒待機、以降は1秒ごとに選択
+    _autoPickTimer=setTimeout(()=>_autoPickOnce(choices, true), 3000);
   }
 }
 
+function _autoPickOnce(choices, first){
+  _autoPickTimer=null;
+  if(!document.getElementById('upgrade-panel').classList.contains('show')) return;
+  const affordable=choices.filter(u=>upgradePoints>=u.cost);
+  if(affordable.length===0){
+    closeUpgradePanelDone(_legacyOnDone);
+    return;
+  }
+  const pick=affordable[Math.floor(Math.random()*affordable.length)];
+  pick.apply();
+  updateUpgradePointHUD(); renderUnitCards();
+  const idx=choices.indexOf(pick);
+  if(pick.isCharBoost){
+    const pctEl=document.getElementById('boost-pct-'+idx);
+    if(pctEl) pctEl.textContent=(charBoostPct[pick.charId]||0)+'/1000';
+    _updateCharDesc(pick, idx);
+  }
+  _refreshCardStates(choices);
+  // 2回目以降は1秒間隔
+  _autoPickTimer=setTimeout(()=>_autoPickOnce(choices, false), 1000);
+}
+
 function renderChoicesPanel(choices){
-  // 毎回プールを再生成して最新のcharBoostPct値を反映
-  choices=buildUpgradePool();
-  if(choices.length===0){ closeUpgradePanelDone(_legacyOnDone); return; }
-  choices=pickRandom3(choices);
   const container=document.getElementById('up-choices');
   container.innerHTML='';
   document.getElementById('up-char-list').innerHTML='';
@@ -1040,18 +1060,18 @@ function renderChoicesPanel(choices){
   const ptsEl=document.getElementById('up-pts'); if(ptsEl) ptsEl.textContent=upgradePoints;
   document.getElementById('up-info').textContent='強化を選ぼう（残り'+upgradePoints+'pt）';
 
-  choices.forEach(u=>{
+  choices.forEach((u,idx)=>{
     const canAfford=upgradePoints>=u.cost;
     const card=document.createElement('div');
     card.className='up-card';
     card.style.opacity=canAfford?'1':'0.4';
 
-    // キャラ強化カードの場合は現在の%と進捗を表示
+    // キャラ強化: 進捗を都度 charBoostPct から取得（押すたびに最新値を表示）
     const isCharBoost=u.isCharBoost;
     const pct=isCharBoost?(charBoostPct[u.charId]||0):null;
     const nameHtml=`${u.name} <span style="font-size:10px;color:#ffd740;">${u.cost}pt</span>`
-      +(isCharBoost?` <span style="font-size:10px;color:#aaa;">${pct}/1000</span>`:'');
-    const descHtml=isCharBoost?'HP・ATK +1%UP':u.desc;
+      +(isCharBoost?` <span id="boost-pct-${idx}" style="font-size:10px;color:#aaa;">${pct}/1000</span>`:'');
+    const descHtml=u.desc; // キャラ強化のdescにはHP/ATK値が含まれる
 
     card.innerHTML=`<span class="up-icon">${u.icon}</span>
       <div class="up-txt">
@@ -1064,11 +1084,54 @@ function renderChoicesPanel(choices){
         u.apply();
         updateUpgradePointHUD();
         renderUnitCards();
-        // ストックボタンを押すまで閉じない → 常に再描画
-        renderChoicesPanel(choices);
+        // カードを再生成せず進捗表示だけ更新
+        if(isCharBoost){
+          const pctEl=document.getElementById('boost-pct-'+idx);
+          if(pctEl) pctEl.textContent=(charBoostPct[u.charId]||0)+'/1000';
+        }
+        // pt残量に応じてカードの有効/無効を更新
+        _refreshCardStates(choices);
       };
     }
     container.appendChild(card);
+  });
+}
+
+// カードのグレーアウト状態とpt表示だけ更新（カードは再生成しない）
+function _updateCharDesc(u, idx){
+  const id=u.charId;
+  const def=gc_def(id);
+  const _m=lvMult(gc_data(id).lv);
+  const _hp=Math.round(def.baseHp*_m*(1+(charBoostPct[id]||0)/100));
+  const _atk=Math.round(def.baseAtk*_m*(1+(charBoostPct[id]||0)/100));
+  const _hpNext=Math.round(def.baseHp*_m*(1+((charBoostPct[id]||0)+1)/100));
+  const _atkNext=Math.round(def.baseAtk*_m*(1+((charBoostPct[id]||0)+1)/100));
+  const cards=document.getElementById('up-choices').querySelectorAll('.up-card');
+  const card=cards[idx]; if(!card) return;
+  const desc=card.querySelector('.up-desc');
+  if(desc) desc.textContent=`HP ${_hp}→${_hpNext} / ATK ${_atk}→${_atkNext}`;
+}
+
+function _refreshCardStates(choices){
+  const ptsEl=document.getElementById('up-pts'); if(ptsEl) ptsEl.textContent=upgradePoints;
+  document.getElementById('up-info').textContent='強化を選ぼう（残り'+upgradePoints+'pt）';
+  const cards=document.getElementById('up-choices').querySelectorAll('.up-card');
+  cards.forEach((card,idx)=>{
+    const u=choices[idx]; if(!u) return;
+    const canAfford=upgradePoints>=u.cost;
+    card.style.opacity=canAfford?'1':'0.4';
+    if(canAfford && !card.onclick){
+      card.onclick=()=>{
+        u.apply(); updateUpgradePointHUD(); renderUnitCards();
+        if(u.isCharBoost){
+          const pctEl=document.getElementById('boost-pct-'+idx);
+          if(pctEl) pctEl.textContent=(charBoostPct[u.charId]||0)+'/1000';
+        }
+        _refreshCardStates(choices);
+      };
+    } else if(!canAfford){
+      card.onclick=null;
+    }
   });
 }
 function _openLegacy(onDone){
@@ -1142,7 +1205,7 @@ function renderUpgradePtPanel(){
 function useCharBoost(id,delta){
   if(delta>0){const add=Math.min(delta,upgradePoints,1000-(charBoostPct[id]||0));if(add<=0)return;upgradePoints-=add;charBoostPct[id]=(charBoostPct[id]||0)+add;}
   else{const sub=Math.min(-delta,charBoostPct[id]||0);if(sub<=0)return;upgradePoints+=sub;charBoostPct[id]=(charBoostPct[id]||0)-sub;}
-  updateUpgradePointHUD(); renderUpgradePtPanel();
+  updateUpgradePointHUD();
 }
 function useUltGrant(id){
   if(upgradePoints<10) return;
