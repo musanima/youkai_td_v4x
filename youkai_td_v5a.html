@@ -937,11 +937,11 @@ function nearestInRange(u,list){
   for(const t of list){
     if(!lanesOverlap(u,t)) continue;
     let d;
-    if(u.isBoss || t.isBoss){
-      // ボスは中心同士で距離計算（5列全幅のため端点基準だと遠すぎる）
+    if(u.isBoss || t.isBoss || (u.laneSize>=2) || (t.laneSize>=2)){
+      // ボス・2列占有は中心同士で距離計算（端点基準だと非対称になるため）
       d = Math.abs(u.y - t.y);
     } else {
-      // 通常: 味方は上端・敵は下端を基準に距離計算
+      // 通常1列: 味方は上端・敵は下端を基準に距離計算
       const uy = u.isEnemy ? u.y+uFS(u)*0.5 : u.y-uFS(u)*0.5;
       const ty = t.isEnemy ? t.y+uFS(t)*0.5 : t.y-uFS(t)*0.5;
       d = Math.abs(uy-ty);
