@@ -227,11 +227,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
 <div id="game-screen" class="screen">
   <div id="top-hud">
     <div class="hc">🌙 第<b id="hud-stage">1</b>夜 W<b id="hud-wave">1</b></div>
-    <div class="hc">💀 <b id="hud-kill">0</b></div>
-    <div class="hc gem-hud">💎<b id="hud-gem">0</b><span class="gem-progress" id="gem-prog"></span></div>
-    <div class="hc" style="background:rgba(138,43,226,0.2);">✨<b id="hud-pts">0</b>pt</div>
-    <div class="hc" id="ehp-wrap">🏯 <b id="hud-ehp">3000</b></div>
-    <div class="hc" id="boss-wrap" style="display:none">👹 <b id="boss-hp-hud">-</b></div>
+    <div class="hc gem-hud">💎<b id="hud-gem">0</b></div>
     <button class="speed-btn" id="speed-btn" onclick="toggleSpeed()" title="倍速（課金機能）">⚡2x</button>
     <button id="abort-btn" onclick="abortGame()" style="margin-left:4px;padding:2px 9px;border:1px solid rgba(231,76,60,0.6);border-radius:5px;background:rgba(231,76,60,0.2);color:#e74c3c;font-size:10px;font-family:inherit;cursor:pointer;touch-action:auto;pointer-events:all;flex-shrink:0;-webkit-tap-highlight-color:rgba(231,76,60,0.3);">⏹ 中断</button>
   </div>
@@ -253,7 +249,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
     </div>
   </div>
   <div id="bottom-hud">
-    <div style="margin-bottom:2px;"><button onclick="if(upgradePoints>0&&G&&!G.paused){G.paused=true;_openUpgradePanelPt();}" style="width:100%;padding:3px;border:1px solid rgba(138,43,226,0.5);border-radius:5px;background:rgba(138,43,226,0.15);color:#c39aff;font-size:10px;font-family:inherit;cursor:pointer;touch-action:manipulation;">✨ 強化（<span id="btn-pts">0</span>pt）</button></div>
+
     <div class="castle-bar">
       <span>⛩️ 自城</span>
       <div id="mhp-bar"><div id="mhp-fill"></div></div>
@@ -268,7 +264,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
 <div id="upgrade-panel">
   <div class="up-box" style="max-height:85vh;overflow-y:auto;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <h2>✨ 強化</h2>
+      <h2>✨ ブースト</h2>
       <span style="font-size:13px;color:#ffd740;font-weight:700;">残り <b id="up-pts">0</b>pt</span>
     </div>
     <div class="up-info" id="up-info" style="margin-bottom:6px;"></div>
@@ -571,7 +567,7 @@ function buildUpgradePool(){
       const _atkNext=Math.round(def.baseAtk*_m*(1+((charBoostPct[id]||0)+1)/100));
       pool.push({
         icon:def.emoji,
-        name:`${def.name} 強化`,
+        name:`${def.name} ブースト`,
         desc:`HP ${_hp}→${_hpNext} / ATK ${_atk}→${_atkNext}`,
         cost:1,
         isCharBoost:true,
@@ -915,7 +911,7 @@ function spawnBoss(){
   const u={...bd,uid:Math.random(),lane:0,x:CW/2,y:EN_Y()+50,at:0,isEnemy:true,isBoss:true,kbVY:0,frozen:0,spdDebuff:0};
   G.enemies.push(u);
   triggerBossIntro(bd);
-  document.getElementById('boss-wrap').style.display='';
+  const _bw=document.getElementById('boss-wrap'); if(_bw) _bw.style.display='';
 }
 function triggerBossIntro(def){
   // ボスごとの出現時演出を実行
@@ -965,15 +961,7 @@ function updateHUD(){
   document.getElementById('hud-wave').textContent=G.wave;
   const stageEl=document.getElementById('hud-stage');
   if(stageEl) stageEl.textContent=gd.stage;
-  document.getElementById('hud-kill').textContent=G.stageKills;
   document.getElementById('hud-gem').textContent=sessionGems;
-  const toNext=GEM_THRESHOLD-((sessionGems-lastUpgradeGems)%GEM_THRESHOLD);
-  document.getElementById('gem-prog').textContent=`(次まで${toNext})`;
-  if(!G.infiniteWave) document.getElementById('hud-ehp').textContent=Math.max(0,Math.round(G.enCastleHp));
-  else document.getElementById('hud-ehp').textContent='∞';
-  const boss=G.enemies.find(e=>e.isBoss);
-  if(boss){document.getElementById('boss-wrap').style.display='';document.getElementById('boss-hp-hud').textContent=Math.max(0,Math.round(boss.hp));}
-  else if(!G.bossAlive) document.getElementById('boss-wrap').style.display='none';
   const r=Math.max(0,G.myHp/G.myMaxHp);
   document.getElementById('mhp-fill').style.width=(r*100)+'%';
   document.getElementById('mhp-fill').style.background=r>0.5?'#2ecc71':r>0.25?'#f39c12':'#e74c3c';
@@ -998,7 +986,7 @@ function checkGemUpgrade(){
 }
 function updateUpgradePointHUD(){
   const el=document.getElementById('hud-pts'); if(el) el.textContent=upgradePoints;
-  const btn=document.getElementById('btn-pts'); if(btn) btn.textContent=upgradePoints;
+  // btn-pts削除済み
 }
 
 let _legacyOnDone=null;
@@ -1058,7 +1046,7 @@ function renderChoicesPanel(choices){
   document.getElementById('up-char-list').innerHTML='';
   document.getElementById('up-ult-list').innerHTML='';
   const ptsEl=document.getElementById('up-pts'); if(ptsEl) ptsEl.textContent=upgradePoints;
-  document.getElementById('up-info').textContent='強化を選ぼう（残り'+upgradePoints+'pt）';
+  document.getElementById('up-info').textContent='ブーストを選ぼう（残り'+upgradePoints+'pt）';
 
   choices.forEach((u,idx)=>{
     const canAfford=upgradePoints>=u.cost;
@@ -1069,9 +1057,11 @@ function renderChoicesPanel(choices){
     // キャラ強化: 進捗を都度 charBoostPct から取得（押すたびに最新値を表示）
     const isCharBoost=u.isCharBoost;
     const pct=isCharBoost?(charBoostPct[u.charId]||0):null;
-    const nameHtml=`${u.name} <span style="font-size:10px;color:#ffd740;">${u.cost}pt</span>`
-      +(isCharBoost?` <span id="boost-pct-${idx}" style="font-size:10px;color:#aaa;">${pct}/1000</span>`:'');
-    const descHtml=u.desc; // キャラ強化のdescにはHP/ATK値が含まれる
+    // キャラブースト: 「名前 Lv0/1000　消費1pt」、必殺技: 「名前の必殺技　消費10pt」
+    const nameHtml=isCharBoost
+      ? `${u.name} <span id="boost-pct-${idx}" style="font-size:10px;color:#aaa;">${pct}/1000</span><span style="font-size:10px;color:#ffd740;margin-left:4px;">消費${u.cost}pt</span>`
+      : `${u.name} <span style="font-size:10px;color:#ffd740;">消費${u.cost}pt</span>`;
+    const descHtml=isCharBoost ? `1%UP　${u.desc}` : u.desc;
 
     card.innerHTML=`<span class="up-icon">${u.icon}</span>
       <div class="up-txt">
@@ -1084,12 +1074,12 @@ function renderChoicesPanel(choices){
         u.apply();
         updateUpgradePointHUD();
         renderUnitCards();
-        // カードを再生成せず進捗表示だけ更新
         if(isCharBoost){
           const pctEl=document.getElementById('boost-pct-'+idx);
           if(pctEl) pctEl.textContent=(charBoostPct[u.charId]||0)+'/1000';
+          // descのHP/ATK表示も更新
+          _updateCharDesc(u, idx);
         }
-        // pt残量に応じてカードの有効/無効を更新
         _refreshCardStates(choices);
       };
     }
@@ -1109,12 +1099,12 @@ function _updateCharDesc(u, idx){
   const cards=document.getElementById('up-choices').querySelectorAll('.up-card');
   const card=cards[idx]; if(!card) return;
   const desc=card.querySelector('.up-desc');
-  if(desc) desc.textContent=`HP ${_hp}→${_hpNext} / ATK ${_atk}→${_atkNext}`;
+  if(desc) desc.textContent=`1%UP　HP ${_hp}→${_hpNext} / ATK ${_atk}→${_atkNext}`;
 }
 
 function _refreshCardStates(choices){
   const ptsEl=document.getElementById('up-pts'); if(ptsEl) ptsEl.textContent=upgradePoints;
-  document.getElementById('up-info').textContent='強化を選ぼう（残り'+upgradePoints+'pt）';
+  document.getElementById('up-info').textContent='ブーストを選ぼう（残り'+upgradePoints+'pt）';
   const cards=document.getElementById('up-choices').querySelectorAll('.up-card');
   cards.forEach((card,idx)=>{
     const u=choices[idx]; if(!u) return;
@@ -1241,8 +1231,17 @@ function doContinue(){
   contUsed=true;
   exchContinue=false;
 
-  // 敵を敵城壁まで戻す
+  // 自拠点全回復
+  G.myHp=G.myMaxHp;
+
+  // 召喚クールタイムリセット
+  deployedIds.forEach(id=>{ G.cdTimers[id]=0; });
+
+  // 敵ノックバック（敵城壁まで戻す）
   G.enemies.forEach(e=>{ e.y=EN_Y()+50+Math.random()*40; e.kbVY=0; });
+
+  // 敵を2秒（120f）停止
+  G.enemies.forEach(e=>{ e.frozen=(e.frozen||0)+120; });
 
   // 全キャラに必殺技付与
   deployedIds.forEach(id=>{
@@ -1250,12 +1249,10 @@ function doContinue(){
     if(dat){ dat.hasUlt=true; if(G.ultReady) G.ultReady[id]=true; }
   });
 
-  // 10秒間HP/ATK 100%アップ（buff）
+  // 10秒間HP/ATK 100%アップ
   G.contBuff=600; // 60fps×10秒
-  G.allies.forEach(a=>{ a.maxHp=a.maxHp*2; a.hp=a.maxHp; a.atk=a.atk*2; });
+  G.allies.forEach(a=>{ a.maxHp=Math.round(a.maxHp*2); a.hp=a.maxHp; a.atk=Math.round(a.atk*2); });
 
-  // 城壁HP を少し回復
-  G.myHp=Math.min(G.myMaxHp, G.myHp+Math.round(G.myMaxHp*0.2));
   G.paused=false;
   renderUnitCards();
   updateHUD();
@@ -1278,12 +1275,12 @@ let contUsed = false;     // コンティニュー使用済みか（1バトル1�
 
 // 交換所で購入できる商品定義
 const EXCH_ITEMS = [
-  { id:'gem10',  icon:'💎', name:'霊玉10%アップ',  desc:'リザルト時の霊玉獲得数を10%増加（重複可・加算）', cost:10,
-    canBuy:()=>true, buy:()=>{ exchGemBonus+=10; } },
-  { id:'gem30',  icon:'💎', name:'霊玉30%アップ',  desc:'リザルト時の霊玉獲得数を30%増加（重複可・加算）', cost:60,
-    canBuy:()=>true, buy:()=>{ exchGemBonus+=30; } },
-  { id:'gem60',  icon:'💎', name:'霊玉60%アップ',  desc:'リザルト時の霊玉獲得数を60%増加（重複可・加算）', cost:180,
-    canBuy:()=>true, buy:()=>{ exchGemBonus+=60; } },
+  { id:'gem10',  icon:'💎', name:'霊玉10%アップ',  desc:'リザルト時の霊玉獲得数を10%増加（各1回・重複加算可・最大100%）', cost:10,
+    canBuy:()=>exchGemBonus<10, buy:()=>{ exchGemBonus+=10; } },
+  { id:'gem30',  icon:'💎', name:'霊玉30%アップ',  desc:'リザルト時の霊玉獲得数を30%増加（各1回・重複加算可・最大100%）', cost:60,
+    canBuy:()=>exchGemBonus<40, buy:()=>{ exchGemBonus+=30; } },
+  { id:'gem60',  icon:'💎', name:'霊玉60%アップ',  desc:'リザルト時の霊玉獲得数を60%増加（各1回・重複加算可・最大100%）', cost:180,
+    canBuy:()=>exchGemBonus<70, buy:()=>{ exchGemBonus+=60; } },
   { id:'cont',   icon:'🔄', name:'コンティニュー', desc:'城壁破壊時に1回だけ継続可能\n敵を城壁まで戻す＋必殺技付与＋10秒間HP/ATK100%アップ', cost:20,
     canBuy:()=>!exchContinue, buy:()=>{ exchContinue=true; } },
 ];
@@ -1311,7 +1308,7 @@ function renderExchange(){
   list.innerHTML='';
   EXCH_ITEMS.forEach(item=>{
     const canAfford=loadMagicStones()>=item.cost;
-    const alreadyBought=item.id==='cont'&&exchContinue;
+    const alreadyBought=(item.id==='cont'&&exchContinue)||!item.canBuy();
     const div=document.createElement('div');
     div.className='exch-item'+(alreadyBought?' bought':'');
     div.innerHTML=`<div class="exch-icon">${item.icon}</div>
@@ -1360,6 +1357,14 @@ function resetExchEffects(){
 function update(){
   if(!G||G.gameOver||G.paused) return;
   G.frame++;
+  // コンティニューバフのカウントダウン
+  if(G.contBuff>0){
+    G.contBuff--;
+    if(G.contBuff===0){
+      G.allies.forEach(a=>{ a.maxHp=Math.round(a.maxHp/2); a.hp=Math.min(a.hp,a.maxHp); a.atk=Math.round(a.atk/2); });
+      showUltEffect('バフ終了');
+    }
+  }
   deployedIds.forEach(id=>{if(G.cdTimers[id]>0)G.cdTimers[id]--;});
   if(G.bossIntro.active){G.bossIntro.timer--;if(G.bossIntro.timer<=0)G.bossIntro.active=false;}
   // ボス生存中: roar定義に従って定期的に咆哮
@@ -1472,7 +1477,7 @@ function update(){
   deadE.forEach(e=>{
     if(e.isBoss){
       G.bossAlive=false;
-      document.getElementById('boss-wrap').style.display='none';
+      const _bw2=document.getElementById('boss-wrap'); if(_bw2) _bw2.style.display='none';
       // ボス撃破後はWave維持（Wave2のままなら城壁HP0で夜クリア）
     }
     const gem=e.isBoss?100:(e.laneSize>=2&&e.atkType==='area'?4:e.laneSize>=2?3:e.atkType==='area'?3:2);
@@ -1505,8 +1510,8 @@ function update(){
       G.bossThreshold=0.4+Math.random()*0.2; // 次の夜のボス出現しきい値をリセット
         G.allies.forEach(a=>{ a.y=MY_Y()-26; a.at=0; a.kbVY=0; });
         G.normalSpawnInterval=70;G.normalSpawnTimer=100;
-        document.getElementById('boss-wrap').style.display='none';
-        document.getElementById('ehp-wrap').style.display='';
+        const _bw2=document.getElementById('boss-wrap'); if(_bw2) _bw2.style.display='none';
+        const _ew=document.getElementById('ehp-wrap'); if(_ew) _ew.style.display='';
         autoApplySpeed();
         updateHUD();
       }else{
@@ -1515,7 +1520,13 @@ function update(){
       }
     }
   }
-  if(G.myHp<=0&&!G.gameOver){G.gameOver=true;showResult(false);}
+  if(G.myHp<=0&&!G.gameOver){
+    if(exchContinue&&!contUsed){
+      if(!showContinuePopup()){ G.gameOver=true; showResult(false); }
+    } else {
+      G.gameOver=true; showResult(false);
+    }
+  }
   // 自動モード思考
   if(autoMode){autoTimer++;if(autoTimer>=AUTO_INTERVAL){autoTimer=0;autoThink();}}
   updateHUD();
@@ -1678,7 +1689,7 @@ function runUpgradeChain(n,onDone){
   if(n<=0){ onDone(); return; }
   // プールが空（全員必殺技解放済み）ならスキップ
   if(buildUpgradePool().length===0){ onDone(); return; }
-  document.getElementById('up-info').textContent='出陣前の強化！（残り'+n+'回）';
+  document.getElementById('up-info').textContent='出陣前ブースト！（残り'+n+'回）';
   openUpgradePanel(()=>{ runUpgradeChain(n-1,onDone); });
 }
 
@@ -1937,10 +1948,10 @@ function renderTrainingList(){
     const cost=isMax?null:LV_COST[baseLv];
     const canAfford=cost!==null&&resGems>=cost;
 
-    const curHp  = Math.round(def.baseHp  * (1+(baseLv-1)*0.14));
-    const curAtk = Math.round(def.baseAtk * (1+(baseLv-1)*0.14));
-    const nextHp  = !isMax ? Math.round(def.baseHp  * (1+(baseLv)*0.14)) : null;
-    const nextAtk = !isMax ? Math.round(def.baseAtk * (1+(baseLv)*0.14)) : null;
+    const curHp  = Math.round(def.baseHp  * lvMult(baseLv));
+    const curAtk = Math.round(def.baseAtk * lvMult(baseLv));
+    const nextHp  = !isMax ? Math.round(def.baseHp  * lvMult(baseLv+1)) : null;
+    const nextAtk = !isMax ? Math.round(def.baseAtk * lvMult(baseLv+1)) : null;
 
     const card = document.createElement('div');
     card.className = 'train-card';
