@@ -318,9 +318,15 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
       <span style="font-size:11px;color:#aaa;">💠 所持魔石</span>
       <span id="training-stone-val" style="font-size:16px;color:#c39aff;font-weight:700;">0</span>
     </div>
+    <div id="training-win-btns" style="display:none;flex-direction:column;gap:6px;margin-bottom:6px;">
+      <div style="display:flex;gap:8px;">
+        <button onclick="goTitle()" style="flex:1;padding:10px;border:none;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:13px;font-family:inherit;cursor:pointer;touch-action:manipulation;">タイトルへ</button>
+        <button id="train-next-btn" onclick="goNextStage()" style="flex:1;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#1a6b3a,#27ae60);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;touch-action:manipulation;">🌙 第2夜開始</button>
+      </div>
+    </div>
     <div style="display:flex;gap:8px;width:100%;">
       <button class="train-footer-btn danger" onclick="confirmReset()" style="flex:1;">🔄 レベルリセット</button>
-      <button class="train-footer-btn primary" onclick="showExchange()" style="flex:1;">魔石交換所 →</button>
+      <button id="train-exch-btn" class="train-footer-btn primary" onclick="showExchange()" style="flex:1;">魔石交換所 →</button>
     </div>
   </div>
 </div>
@@ -1347,6 +1353,7 @@ function closeStatusPanel(){
 // ========== stageクリア後の遷移 ==========
 function goNextStage(){
   clearGameSave();
+  // 勝利時の霊玉を次ステージに持ち越す（resGemsはそのまま維持）
   // クリア時の味方状態を保存（defId・lane・hp比率のみ）
   const savedAllies = G ? G.allies.map(a=>({
     defId: a.defId,
@@ -1805,7 +1812,6 @@ function loop(){
 
 function startGame(){
   gd.trainableIds=[...deployedIds];
-  exchGemBonus=0; // 出陣時に宝玉アップ効果をリセット
   // 出陣時にhasUltをリセット（続きからは引き継ぐが、最初から出陣は引き継がない）
   gd.chars.forEach(c=>{ c.hasUlt=false; });
 
