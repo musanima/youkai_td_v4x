@@ -2137,11 +2137,24 @@ function applyBaseLevels(){
 
 // ---- 育成画面表示 ----
 function showTraining(){
-  // resGems はリザルトで設定済みの値をそのまま引き継ぐ
-  // （renderResultTraining で resGems = G.stageGems||0 が設定されている）
   const sv=document.getElementById('training-stone-val');
   if(sv) sv.textContent=loadMagicStones().toLocaleString();
-  renderTrainingList(); // resGems を使って描画
+  renderTrainingList();
+  // 勝利時: 「タイトルへ」「第○夜開始」を表示、「魔石交換所」を非表示
+  const winBtns=document.getElementById('training-win-btns');
+  const exchBtn=document.getElementById('train-exch-btn');
+  const nextBtn=document.getElementById('train-next-btn');
+  if(gd.lastWin){
+    if(winBtns) winBtns.style.display='flex';
+    if(exchBtn) exchBtn.style.display='none';
+    if(nextBtn){
+      const nextNum=gd.stage>=LAST_WAVE?1:gd.stage+1;
+      nextBtn.textContent='🌙 第'+nextNum+'夜開始';
+    }
+  } else {
+    if(winBtns) winBtns.style.display='none';
+    if(exchBtn) exchBtn.style.display='';
+  }
   showScreen('training-screen');
 }
 
