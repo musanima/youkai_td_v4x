@@ -75,16 +75,16 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
 #unit-row{display:flex;gap:4px;justify-content:center;}
 
 /* カード */
-.ucard{position:relative;width:56px;height:64px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;touch-action:none;transition:opacity 0.15s,box-shadow 0.15s;}
+.ucard{position:relative;width:60px;height:70px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:grab;touch-action:none;transition:opacity 0.15s,box-shadow 0.15s;}
 .ucard.has-ult{border-color:rgba(255,215,0,0.9);box-shadow:0 0 0 2px rgba(255,215,0,0.7),0 0 16px rgba(255,200,0,0.8),0 0 30px rgba(255,150,0,0.4);animation:ultGlow 1.2s ease-in-out infinite;}
 @keyframes ultGlow{0%,100%{box-shadow:0 0 0 2px rgba(255,215,0,0.7),0 0 16px rgba(255,200,0,0.8),0 0 30px rgba(255,150,0,0.4);}50%{box-shadow:0 0 0 3px rgba(255,215,0,1),0 0 24px rgba(255,200,0,1),0 0 44px rgba(255,150,0,0.6);}}
-.ucard .ue{font-size:21px;line-height:1;}
-.ucard .un{font-size:7px;color:#ccc;margin-top:1px;text-align:center;line-height:1.2;}
-.ucard .ulv{position:absolute;bottom:2px;left:3px;font-size:7px;color:#aaa;}
-.ucard .uco{position:absolute;top:2px;right:3px;font-size:7px;color:#ffd740;}
-.ucard .ult-badge{position:absolute;bottom:2px;right:3px;font-size:9px;line-height:1;}
-.ucard .ucd{position:absolute;inset:0;background:rgba(0,0,0,0.72);border-radius:8px;display:none;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-direction:column;gap:0px;}
-.ucard .ucd .cdlb{font-size:7px;color:#aaa;}
+.ucard .ue{font-size:26px;line-height:1;}
+.ucard .un{display:none;}
+.ucard .ulv{display:none;}
+.ucard .uco{font-size:8px;color:#aaa;line-height:1;}
+.ucard .ult-badge{display:none;}
+.ucard .ucd{font-size:9px;font-weight:700;color:#fff;line-height:1;text-align:center;}
+.ucard .ucd .cdlb{display:none;}
 .ucard.pressing{transform:scale(0.93);box-shadow:0 0 12px rgba(255,200,0,0.6);}
 
 /* 必殺技エフェクト */
@@ -190,7 +190,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
     <button class="title-btn continue" onclick="resumeGame()">続きから ▶</button>
     <div class="continue-info" id="continue-info"></div>
   </div>
-  <button class="title-btn" onclick="showFormation()">出陣 ▶</button>
+  <button class="title-btn" onclick="showFormation()">最初から ▶</button>
   <button class="title-btn" style="font-size:12px;padding:8px 24px;background:rgba(231,76,60,0.3);border:1px solid rgba(231,76,60,0.5);" onclick="confirmReset()">🔄 育成データをリセット</button>
 </div>
 
@@ -700,7 +700,7 @@ function renderUnitCards(){
     const card=document.createElement('div');
     card.className='ucard'+(G.ultReady[id]?' has-ult':'');
     card.id='ucard-'+id;
-    card.innerHTML=`<span class="ue">${def.emoji}</span><span class="un">${def.name}</span><span class="ulv">Lv${dat.lv}</span><span class="uco" id="cnt-${id}">0/${def.maxField}</span><span class="ult-badge" id="ult-${id}">${G.ultReady[id]?def.ultSkill.emoji:'🔒'}</span><div class="ucd" id="cd-${id}"><span class="cdlb">CD</span><span id="cdt-${id}">-</span></div>`;
+    card.innerHTML=`<span class="ue">${def.emoji}</span><span class="ucd" id="cd-${id}">-</span><span class="uco" id="cnt-${id}">0/${def.maxField}</span>`;
     setupCardEvents(card,id);
     row.appendChild(card);
   });
@@ -712,15 +712,15 @@ function updateCards(){
     const cdEl=document.getElementById('cd-'+id);
     const cntEl=document.getElementById('cnt-'+id);
     const cdtEl=document.getElementById('cdt-'+id);
-    const ultEl=document.getElementById('ult-'+id);
     const card=document.getElementById('ucard-'+id);
     if(!cdEl)return;
     const onCd=G.cdTimers[id]>0, full=G.fieldCount[id]>=def.maxField;
-    cdEl.style.display=(onCd||full)?'flex':'none';
-    if(cdtEl) cdtEl.textContent=onCd?Math.ceil(G.cdTimers[id]/60)+'s':'MAX';
+    // CDテキスト表示（オーバーレイなし）
+    if(cdEl) cdEl.textContent=full?'MAX':onCd?Math.ceil(G.cdTimers[id]/60)+'s':'';
     if(cntEl) cntEl.textContent=G.fieldCount[id]+'/'+def.maxField;
-    if(card){card.style.opacity=(onCd||full)?'0.4':'1';card.className='ucard'+(G.ultReady[id]?' has-ult':'');}
-    if(ultEl) ultEl.textContent=G.ultReady[id]?def.ultSkill.emoji:'🔒';
+    if(card){card.style.opacity=(onCd||full)?'0.5':'1';card.className='ucard'+(G.ultReady[id]?' has-ult':'');}
+    const ueEl=card?card.querySelector('.ue'):null;
+    if(ueEl) ueEl.style.fontSize=(onCd||full)?'22px':'30px';
   });
 }
 
@@ -793,8 +793,8 @@ function setupCardEvents(card,id){
   function onTouchEnd(e){
     if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; }
     card.classList.remove('pressing');
-    // 長押し発動済みならドラッグ処理に渡さない
     if(didLongPress){ didLongPress=false; return; }
+
   }
 
   function startDrag(e){
@@ -1337,12 +1337,61 @@ function closeStatusPanel(){
 
 // ========== stageクリア後の遷移 ==========
 function goNextStage(){
-  // 次の夜に進む（stageを進めてから編成画面へ）
   clearGameSave();
+  // クリア時の味方状態を保存（defId・lane・hp比率のみ）
+  const savedAllies = G ? G.allies.map(a=>({
+    defId: a.defId,
+    lane:  a.lane,
+    hpRatio: a.maxHp>0 ? a.hp/a.maxHp : 1, // HP比率で保存
+    hasUlt: a.hasUlt,
+  })) : [];
+  const savedMyHp = G ? G.myHp : null;
+
   if(gd.stage>=LAST_WAVE){ gd.stage=1; gd.run++; }
   else { gd.stage++; }
-  G=null;
-  showFormation();
+
+  resizeCanvas();
+  showScreen('game-screen');
+  updateAutoBtn();
+  autoApplySpeed();
+  updateSpeedBtn();
+  setTimeout(()=>{
+    resizeCanvas();
+    initG();
+    // 前の夜のキャラをspawnAllyと同等の形で復元
+    savedAllies.forEach(s=>{
+      const id=s.defId;
+      const def=gc_def(id);
+      if(!def) return;
+      if(G.fieldCount[id]>=def.maxField) return;
+      const m=lvMult(gc_data(id).lv);
+      const boost=1+(charBoostPct[id]||0)/100;
+      const maxHp=Math.round(def.baseHp*m*boost);
+      const ally={
+        uid:Math.random(), defId:id,
+        emoji:def.emoji, name:def.name, col:def.col,
+        laneSize:def.laneSize, atkType:def.atkType, proj:def.proj,
+        hp:Math.round(maxHp*s.hpRatio), maxHp,
+        atk:Math.round(def.baseAtk*m*boost), spd:def.spd,
+        range:def.range, atkSpd:def.atkSpd,
+        lane:s.lane, x:uCX({lane:s.lane,laneSize:def.laneSize}), y:MY_Y()-26,
+        at:0, isEnemy:false, kbVY:0, invincible:0, spdBuff:0,
+        hasUlt:s.hasUlt, ultCd:def.ultSkill?def.ultSkill.cd:0,
+      };
+      G.allies.push(ally);
+      G.fieldCount[id]=(G.fieldCount[id]||0)+1;
+      G.ultReady[id]=s.hasUlt;
+      G.cdTimers[id]=0;
+      const _dat=gc_data(id); if(_dat) _dat.hasUlt=s.hasUlt;
+    });
+    // 自城HPも引き継ぎ
+    if(savedMyHp!==null){ G.myHp=Math.min(savedMyHp, G.myMaxHp); }
+    renderUnitCards();
+    updateHUD();
+    if(rid) cancelAnimationFrame(rid);
+    G.paused=false;
+    loop();
+  },60);
 }
 
 function goTitle(){
@@ -1357,6 +1406,7 @@ function goTitle(){
     enCastleHp:1000, enCastleMaxHp:1000, stageGems:0,
     bossSpawned:false, bossAlive:false, bossDefeated:false,
     infiniteWave:false, contBuff:0, bossThreshold:0.5,
+    allies:[], // saveGameState内のG.allies.mapでエラーにならないよう
   };
   const prev=G; G=dummyG;
   sessionGems=0; lastUpgradeGems=0;
@@ -1429,6 +1479,19 @@ function renderExchange(){
     status.style.cssText='font-size:10px;color:#2ecc71;margin-top:8px;padding:8px;background:rgba(46,204,113,0.08);border-radius:8px;';
     status.innerHTML='✅ 次のバトルに適用'+(exchGemBonus>0?` 霊玉+${exchGemBonus}%`:'')+(exchContinue?' コンティニュー×1':'');
     list.appendChild(status);
+  }
+  // 勝利後: 「第○夜開始」「タイトルへ」ボタンを表示
+  const exchFooter=document.getElementById('exch-footer');
+  if(exchFooter){
+    if(gd.lastWin){
+      const nextStageNum=gd.stage>=LAST_WAVE?1:gd.stage+1;
+      exchFooter.innerHTML=`<div style="display:flex;gap:8px;margin-top:12px;">
+        <button onclick="goTitle()" style="flex:1;padding:11px;border:none;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:13px;font-family:inherit;cursor:pointer;touch-action:manipulation;">タイトルへ</button>
+        <button onclick="goNextStage()" style="flex:1;padding:11px;border:none;border-radius:8px;background:linear-gradient(135deg,#1a6b3a,#27ae60);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;touch-action:manipulation;">🌙 第${nextStageNum}夜開始</button>
+      </div>`;
+    } else {
+      exchFooter.innerHTML='';
+    }
   }
 }
 
@@ -1734,6 +1797,8 @@ function loop(){
 function startGame(){
   gd.trainableIds=[...deployedIds];
   exchGemBonus=0; // 出陣時に宝玉アップ効果をリセット
+  // 出陣時にhasUltをリセット（続きからは引き継ぐが、最初から出陣は引き継がない）
+  gd.chars.forEach(c=>{ c.hasUlt=false; });
 
   // Waveスキップのコスト確認
   const sel=document.getElementById('wave-select');
@@ -1808,6 +1873,7 @@ function showResult(win){
     clearGameSave();
     gd.stage=1; gd.run=1;
     gd.chars=CHAR_DEFS.map(c=>({id:c.id, lv:getBaseLevel(c.id), hasUlt:false}));
+    exchGemBonus=0; exchContinue=false; contUsed=false; // 敗北時に交換所効果をリセット
     if(trainBtn){ trainBtn.textContent='育成する 🌱'; trainBtn.onclick=()=>showTraining(); }
   }
   // resGems にセッション霊玉を保存（育成画面で使う）
@@ -1856,6 +1922,12 @@ function saveGameState(){
     lastUpgradeGems: lastUpgradeGems,
     exchGemBonus: exchGemBonus,
     deployedIds: [...deployedIds],
+    // 味方の状態（defId・lane・hp比率・hasUlt）
+    allies: G.allies.map(a=>({
+      defId:a.defId, lane:a.lane,
+      hpRatio:a.maxHp>0?a.hp/a.maxHp:1,
+      hasUlt:a.hasUlt,
+    })),
     // キャラLv・hasUlt（ゲーム中に強化された分も含む）
     chars: gd.chars.map(c=>({id:c.id, lv:c.lv, hasUlt:c.hasUlt})),
     // 必殺技のready状態
@@ -1936,7 +2008,45 @@ function resumeGame(){
     G.stageGems    = save.stageGems;
     G.bossSpawned  = save.bossDefeated ? true  : false;
     G.bossAlive    = save.bossDefeated ? false : false;
-    // ultReady を復元
+    // gd.charsのhasUltをsave.charsから復元
+    if(save.chars){
+      save.chars.forEach(sc=>{
+        const dat=gc_data(sc.id);
+        if(dat) dat.hasUlt=sc.hasUlt;
+      });
+    }
+
+    // 味方を復元（中断時の状態を再現）
+    if(save.allies && save.allies.length>0){
+      G.allies=[];
+      save.allies.forEach(s=>{
+        const id=s.defId;
+        const def=gc_def(id);
+        if(!def) return;
+        if((G.fieldCount[id]||0)>=def.maxField) return;
+        const lv=lvMult(gc_data(id).lv);
+        const boost=1+(charBoostPct[id]||0)/100;
+        const maxHp=Math.round(def.baseHp*lv*boost);
+        G.allies.push({
+          uid:Math.random(), defId:id,
+          emoji:def.emoji, name:def.name, col:def.col,
+          laneSize:def.laneSize, atkType:def.atkType, proj:def.proj,
+          hp:Math.round(maxHp*(s.hpRatio||1)), maxHp,
+          atk:Math.round(def.baseAtk*lv*boost), spd:def.spd,
+          range:def.range, atkSpd:def.atkSpd,
+          lane:s.lane, x:uCX({lane:s.lane,laneSize:def.laneSize}), y:MY_Y()-26,
+          at:0, isEnemy:false, kbVY:0, invincible:0, spdBuff:0,
+          hasUlt:s.hasUlt, ultCd:def.ultSkill?def.ultSkill.cd:0,
+        });
+        G.fieldCount[id]=(G.fieldCount[id]||0)+1;
+        G.ultReady[id]=s.hasUlt;
+        G.cdTimers[id]=0;
+        // gd.charsにも反映
+        const dat2=gc_data(id); if(dat2) dat2.hasUlt=s.hasUlt;
+      });
+    }
+
+    // ultReadyをsave.ultReadyで最終上書き（ループ内の個別設定より優先）
     Object.assign(G.ultReady, save.ultReady||{});
 
     // セーブデータを削除（再開したので不要）
@@ -1946,10 +2056,8 @@ function resumeGame(){
     updateHUD();
 
     if(rid) cancelAnimationFrame(rid);
-    // 再開前に強化は出さない（中断時点から続ける）
-    // 続きから: ≡パネルを開いた状態で一時停止してスタート
     G.paused=true;
-    loop(); // 描画は動かす
+    loop();
     showStatusPanel();
   },60);
 }
