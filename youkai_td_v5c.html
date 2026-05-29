@@ -776,15 +776,13 @@ function setupCardEvents(card,id){
         didLongPress=true;
         card.classList.remove('pressing');
         fireUlt(id);
-        // 長押し後はドラッグに移行させない
         dragging=null; dragId=null; dragLane=-1;
         ghost.style.display='none'; laneInd.style.display='none';
       },LONG_PRESS_MS);
-      // 長押し開始時はまだドラッグを始めない（指が動いたらドラッグに移行）
-      return;
+      return; // 長押し待ち（タップ・ドラッグ不可）
     }
 
-    // 必殺技なし → 即ドラッグ開始
+    // 必殺技なし → ドラッグのみ（タップ召喚なし）
     startDrag(e);
   }
 
