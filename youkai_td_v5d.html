@@ -314,19 +314,21 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
   </div>
   <div id="training-list"></div>
   <div id="training-footer">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;margin-bottom:4px;">
-      <span style="font-size:11px;color:#aaa;">💠 所持魔石</span>
-      <span id="training-stone-val" style="font-size:16px;color:#c39aff;font-weight:700;">0</span>
+    <!-- 勝利時: タイトルへ・第○夜開始のみ -->
+    <div id="training-win-btns" style="display:none;gap:8px;width:100%;">
+      <button onclick="goTitle()" style="flex:1;padding:11px;border:none;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:13px;font-family:inherit;cursor:pointer;touch-action:manipulation;">タイトルへ</button>
+      <button id="train-next-btn" onclick="goNextStage()" style="flex:1;padding:11px;border:none;border-radius:8px;background:linear-gradient(135deg,#1a6b3a,#27ae60);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;touch-action:manipulation;">🌙 第2夜開始</button>
     </div>
-    <div id="training-win-btns" style="display:none;flex-direction:column;gap:6px;margin-bottom:6px;">
-      <div style="display:flex;gap:8px;">
-        <button onclick="goTitle()" style="flex:1;padding:10px;border:none;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:13px;font-family:inherit;cursor:pointer;touch-action:manipulation;">タイトルへ</button>
-        <button id="train-next-btn" onclick="goNextStage()" style="flex:1;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#1a6b3a,#27ae60);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;touch-action:manipulation;">🌙 第2夜開始</button>
+    <!-- 敗北時: 所持魔石・リセット・交換所 -->
+    <div id="training-lose-btns" style="display:flex;flex-direction:column;gap:6px;width:100%;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">
+        <span style="font-size:11px;color:#aaa;">💠 所持魔石</span>
+        <span id="training-stone-val" style="font-size:16px;color:#c39aff;font-weight:700;">0</span>
       </div>
-    </div>
-    <div style="display:flex;gap:8px;width:100%;">
-      <button class="train-footer-btn danger" onclick="confirmReset()" style="flex:1;">🔄 レベルリセット</button>
-      <button id="train-exch-btn" class="train-footer-btn primary" onclick="showExchange()" style="flex:1;">魔石交換所 →</button>
+      <div style="display:flex;gap:8px;">
+        <button class="train-footer-btn danger" onclick="confirmReset()" style="flex:1;">🔄 レベルリセット</button>
+        <button id="train-exch-btn" class="train-footer-btn primary" onclick="showExchange()" style="flex:1;">魔石交換所 →</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2147,16 +2149,17 @@ function showTraining(){
   const winBtns=document.getElementById('training-win-btns');
   const exchBtn=document.getElementById('train-exch-btn');
   const nextBtn=document.getElementById('train-next-btn');
+  const loseBtns=document.getElementById('training-lose-btns');
   if(gd.lastWin){
     if(winBtns) winBtns.style.display='flex';
-    if(exchBtn) exchBtn.style.display='none';
+    if(loseBtns) loseBtns.style.display='none';
     if(nextBtn){
       const nextNum=gd.stage>=LAST_WAVE?1:gd.stage+1;
       nextBtn.textContent='🌙 第'+nextNum+'夜開始';
     }
   } else {
     if(winBtns) winBtns.style.display='none';
-    if(exchBtn) exchBtn.style.display='';
+    if(loseBtns) loseBtns.style.display='flex';
   }
   showScreen('training-screen');
 }
