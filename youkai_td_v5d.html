@@ -1623,7 +1623,7 @@ function update(){
         if(!bossAliveNow && Math.abs(dy)<=u.range+20){
           u.at++;if(u.at>=u.atkSpd){u.at=0;
             G.enCastleHp-=u.atk;
-            if(bossNotYet && G.enCastleHp<=0) G.enCastleHp=1; // 0以下になる場合のみHP1で止める
+            if(bossNotYet) G.enCastleHp=Math.max(1,G.enCastleHp); // ボス未出現時はHP1以下にならない
             addParticles(uCX(u),EN_Y(),'#ffd740',5);
           }
         }
@@ -1689,8 +1689,8 @@ function update(){
 
   // 城壁HP0の処理
   if(G.enCastleHp<=0&&!G.gameOver&&!G.paused){
-    if(G.wave===1){ G.enCastleHp=1; }
-    else if(G.wave===2||G.wave===3){
+    if(G.wave===1){ G.enCastleHp=Math.max(1,G.enCastleHp); }
+    else if(G.wave>=2){
       // 夜クリア → リザルト表示（stageは goNextStage で進める）
       if(gd.stage > (gd.clearedWave||0)) gd.clearedWave = gd.stage;
       if(LAST_WAVE > (gd.clearedWave||0)) gd.clearedWave = gd.stage;
