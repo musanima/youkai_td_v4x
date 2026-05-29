@@ -1687,17 +1687,7 @@ function update(){
   // 霊玉チェック（Wave遷移の前に実行 → paused=trueになったらWave遷移はスキップされる）
   checkGemUpgrade();
 
-  // 城壁HP0の処理
-  if(G.enCastleHp<=0&&!G.gameOver&&!G.paused){
-    if(G.wave===1){ G.enCastleHp=Math.max(1,G.enCastleHp); }
-    else if(G.wave>=2){
-      // 夜クリア → リザルト表示（stageは goNextStage で進める）
-      if(gd.stage > (gd.clearedWave||0)) gd.clearedWave = gd.stage;
-      if(LAST_WAVE > (gd.clearedWave||0)) gd.clearedWave = gd.stage;
-      G.gameOver=true; G.gameWin=true;
-      showResult(true);
-    }
-  }
+  // 城壁HP0の処理はloop()内で実行
   if(G.myHp<=0&&!G.gameOver){
     if(exchContinue&&!contUsed){
       if(!showContinuePopup()){ G.gameOver=true; showResult(false); }
@@ -1725,7 +1715,14 @@ function draw(){
   [[30,10],[95,28],[185,7],[290,20],[385,10],[62,5],[320,34]].forEach(([x,y])=>{ctx2.beginPath();ctx2.arc(x*(CW/420),y,1,0,Math.PI*2);ctx2.fill();});
   ctx2.fillStyle='rgba(255,240,180,0.7)';ctx2.beginPath();ctx2.arc(CW-35,28,14,0,Math.PI*2);ctx2.fill();
   ctx2.fillStyle='#0a0a18';ctx2.beginPath();ctx2.arc(CW-29,23,11,0,Math.PI*2);ctx2.fill();
-  // レーン
+  // レーン背景（偶数列=2・4列を薄く色分け）
+  for(let i=0;i<LANES;i++){
+    if(i%2===1){ // 列2・4（0-indexed: 1・3）
+      ctx2.fillStyle='rgba(255,255,255,0.04)';
+      ctx2.fillRect(LW()*i,0,LW(),CH);
+    }
+  }
+  // レーン境界線
   ctx2.strokeStyle='rgba(255,255,255,0.06)';ctx2.lineWidth=1;
   for(let i=1;i<LANES;i++){ctx2.beginPath();ctx2.moveTo(LW()*i,0);ctx2.lineTo(LW()*i,CH);ctx2.stroke();}
   // 召喚エリア
@@ -1745,7 +1742,7 @@ function draw(){
     ctx2.fillStyle='rgba(0,0,0,0.4)';ctx2.fillRect(10,EN_Y()+7,CW-20,6);
     ctx2.fillStyle=er>0.5?'#9b59b6':er>0.25?'#e67e22':'#e74c3c';ctx2.fillRect(10,EN_Y()+7,(CW-20)*er,6);
     if(!G.bossSpawned){ctx2.strokeStyle='rgba(255,220,0,0.6)';ctx2.lineWidth=1;ctx2.setLineDash([3,3]);ctx2.beginPath();ctx2.moveTo(10+(CW-20)*0.5,EN_Y()+7);ctx2.lineTo(10+(CW-20)*0.5,EN_Y()+13);ctx2.stroke();ctx2.setLineDash([]);ctx2.font='8px sans-serif';ctx2.fillStyle='#ffd740';ctx2.textBaseline='alphabetic';ctx2.fillText(Math.round(G.bossThreshold*100)+'%→BOSS',cx2,EN_Y()+25);}
-    else{ctx2.font='8px sans-serif';ctx2.fillStyle='#ddd';ctx2.textBaseline='alphabetic';ctx2.fillText(Math.round(G.enCastleHp),cx2,EN_Y()+25);}
+    else{ctx2.font='8px sans-serif';ctx2.fillStyle='#ddd';ctx2.textBaseline='alphabetic';ctx2.fillText(Math.max(0,Math.round(G.enCastleHp)),cx2,EN_Y()+25);}
   }else{
     ctx2.fillStyle='rgba(140,0,0,0.14)';ctx2.fillRect(0,0,CW,EN_Y()+46);
     const rem=Math.max(0,30-Math.round(G.infiniteSurviveTimer/60));
@@ -1817,6 +1814,18 @@ function loop(){
   for(let i=0;i<spd;i++){
     if(!G||G.gameOver||G.paused) break;
     update();
+  }
+  // 城壁HP0判定（paused中でも毎フレーム実行）
+  if(G&&!G.gameOver){
+    if(G.enCastleHp<=0){
+      if(G.wave===1){ G.enCastleHp=Math.max(1,G.enCastleHp); }
+      else if(G.wave>=2){
+        if(gd.stage > (gd.clearedWave||0)) gd.clearedWave = gd.stage;
+        if(LAST_WAVE > (gd.clearedWave||0)) gd.clearedWave = gd.stage;
+        G.gameOver=true; G.gameWin=true;
+        showResult(true);
+      }
+    }
   }
   draw();
   if(G&&!G.gameOver) rid=requestAnimationFrame(loop);
