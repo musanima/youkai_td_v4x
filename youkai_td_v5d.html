@@ -1373,7 +1373,10 @@ function goNextStage(){
   updateSpeedBtn();
   setTimeout(()=>{
     resizeCanvas();
+    const _savedResGems=resGems; // initG前に保存
     initG();
+    resGems=_savedResGems; // 霊玉を持ち越し
+    sessionGems=_savedResGems; // HUD表示用にも反映
     // 前の夜のキャラをspawnAllyと同等の形で復元
     savedAllies.forEach(s=>{
       const id=s.defId;
