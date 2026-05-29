@@ -736,6 +736,7 @@ function cxToLane(cx,ls){const r=cv.getBoundingClientRect();const px=(cx-r.left)
 // 長押し判定
 let pressTimer=null, pressingId=null;
 const LONG_PRESS_MS=500;
+const DRAG_THRESHOLD=8; // この距離以上動いたらドラッグ判定
 
 
 
@@ -753,6 +754,7 @@ function fireUlt(id){
 function setupCardEvents(card,id){
   let longPressTimer=null;
   let didLongPress=false;
+  let touchStartX=0, touchStartY=0;
 
   function onTouchStart(e){
     if(!G||G.gameOver) return;
@@ -760,6 +762,9 @@ function setupCardEvents(card,id){
     e.preventDefault(); // passive:false で呼べる
 
     didLongPress=false;
+    // タッチ開始座標を記録（移動距離判定用）
+    touchStartX=e.touches[0].clientX;
+    touchStartY=e.touches[0].clientY;
 
     // 必殺技が使える場合は長押し判定を開始
     if(G.ultReady&&G.ultReady[id]){
@@ -783,10 +788,14 @@ function setupCardEvents(card,id){
 
   function onTouchMove(e){
     if(longPressTimer){
-      // 指が動いたら長押しキャンセルしてドラッグに移行
-      clearTimeout(longPressTimer); longPressTimer=null;
-      card.classList.remove('pressing');
-      startDrag(e);
+      // 移動距離が閾値以上の場合のみ長押しキャンセルしてドラッグに移行
+      const dx=e.touches[0].clientX-touchStartX;
+      const dy=e.touches[0].clientY-touchStartY;
+      if(Math.sqrt(dx*dx+dy*dy)>DRAG_THRESHOLD){
+        clearTimeout(longPressTimer); longPressTimer=null;
+        card.classList.remove('pressing');
+        startDrag(e);
+      }
     }
   }
 
