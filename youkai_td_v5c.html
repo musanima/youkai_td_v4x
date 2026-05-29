@@ -349,8 +349,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
     <div class="res-stats" id="res-stats"></div>
     <div class="res-gems" id="res-gems"></div>
     <div class="res-btns">
-      <button class="res-btn" id="res-back-btn" onclick="showFormation()">編成に戻る</button>
-      <button class="res-btn primary" id="res-next" onclick="nextStage()">次のステージ ▶</button>
+      <button class="res-btn primary" id="res-train-btn" onclick="showTraining()">育成へ 🌱</button>
     </div>
   </div>
 </div>
@@ -1801,18 +1800,15 @@ function showResult(win){
   document.getElementById('res-gems').textContent='';
   const nb=document.getElementById('res-next');
   const backBtn=document.getElementById('res-back-btn');
+  const trainBtn=document.getElementById('res-train-btn');
   if(win){
-    clearGameSave(); // クリア時はセーブ不要
-    nb.style.display='';
-    nb.textContent=gd.stage>=LAST_WAVE?'周回する ↺':'次のステージ ▶';
-    if(backBtn){ backBtn.textContent='編成に戻る'; backBtn.onclick=()=>showFormation(); }
+    clearGameSave();
+    if(trainBtn){ trainBtn.textContent='育成へ 🌱'; trainBtn.onclick=()=>showTraining(); }
   }else{
-    nb.style.display='none';
-    // 敗北時: セーブデータ削除 + リセット
     clearGameSave();
     gd.stage=1; gd.run=1;
     gd.chars=CHAR_DEFS.map(c=>({id:c.id, lv:getBaseLevel(c.id), hasUlt:false}));
-    if(backBtn){ backBtn.textContent='育成する 🌱'; backBtn.onclick=()=>showTraining(); }
+    if(trainBtn){ trainBtn.textContent='育成する 🌱'; trainBtn.onclick=()=>showTraining(); }
   }
   // resGems にセッション霊玉を保存（育成画面で使う）
   gd.lastWin=win; // 育成・交換所の導線分岐用
