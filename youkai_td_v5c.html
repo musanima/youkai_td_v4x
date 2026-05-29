@@ -75,7 +75,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
 #unit-row{display:flex;gap:4px;justify-content:center;}
 
 /* カード */
-.ucard{position:relative;width:60px;height:70px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:grab;touch-action:none;transition:opacity 0.15s,box-shadow 0.15s;}
+.ucard{position:relative;width:60px;height:70px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.11);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:grab;touch-action:manipulation;transition:opacity 0.15s,box-shadow 0.15s;}
 .ucard.has-ult{border-color:rgba(255,215,0,0.9);box-shadow:0 0 0 2px rgba(255,215,0,0.7),0 0 16px rgba(255,200,0,0.8),0 0 30px rgba(255,150,0,0.4);animation:ultGlow 1.2s ease-in-out infinite;}
 @keyframes ultGlow{0%,100%{box-shadow:0 0 0 2px rgba(255,215,0,0.7),0 0 16px rgba(255,200,0,0.8),0 0 30px rgba(255,150,0,0.4);}50%{box-shadow:0 0 0 3px rgba(255,215,0,1),0 0 24px rgba(255,200,0,1),0 0 44px rgba(255,150,0,0.6);}}
 .ucard .ue{font-size:26px;line-height:1;}
