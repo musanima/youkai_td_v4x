@@ -1338,9 +1338,12 @@ function closeStatusPanel(){
 
 // ========== stageクリア後の遷移 ==========
 function goNextStage(){
-  // 次のstageに進む
+  // 次の夜に進む（stageを進めてから編成画面へ）
   clearGameSave();
-  nextStage();
+  if(gd.stage>=LAST_WAVE){ gd.stage=1; gd.run++; }
+  else { gd.stage++; }
+  G=null;
+  showFormation();
 }
 
 function goTitle(){
@@ -1845,9 +1848,9 @@ function showResult(win){
   }
 }
 function nextStage(){
-  if(gd.stage>=LAST_WAVE){gd.stage=1;gd.run++;}else{gd.stage++;}
+  // 次の夜へ（stageは既にgoNextStageかgoTitleで進めているのでそのまま）
   if(autoMode){
-    startGame(); // 編成画面スキップ
+    startGame();
   } else {
     showFormation();
   }
@@ -1965,9 +1968,10 @@ function resumeGame(){
 
     if(rid) cancelAnimationFrame(rid);
     // 再開前に強化は出さない（中断時点から続ける）
-    G.paused=false;
-    const sp=document.getElementById('status-panel'); if(sp) sp.style.display='none';
-    loop();
+    // 続きから: ≡パネルを開いた状態で一時停止してスタート
+    G.paused=true;
+    loop(); // 描画は動かす
+    showStatusPanel();
   },60);
 }
 
