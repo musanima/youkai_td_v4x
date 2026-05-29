@@ -1599,30 +1599,13 @@ function update(){
 
   // 城壁HP0の処理
   if(G.enCastleHp<=0&&!G.gameOver&&!G.paused){
-    // Wave1のみHP1で止める（ボス未出現中は城壁を守る）
     if(G.wave===1){ G.enCastleHp=1; }
     else if(G.wave===2||G.wave===3){
-      // Wave3の城壁破壊 → 夜クリア
+      // 夜クリア → リザルト表示（stageは goNextStage で進める）
       if(gd.stage > (gd.clearedWave||0)) gd.clearedWave = gd.stage;
-      if(gd.stage<LAST_WAVE){
-        if(!autoMode) showWaveBreakBanner(gd.stage);
-        gd.stage++;
-        G.wave=1;
-        const sc=1+(gd.stage-1)*0.35+(gd.run-1)*0.6;
-        G.enCastleHp=Math.round(EN_CASTLE_BASE[Math.min(gd.stage-1,EN_CASTLE_BASE.length-1)]*sc);
-        G.enCastleMaxHp=G.enCastleHp;
-        G.bossSpawned=false;G.bossAlive=false;G.bossRoarTimer=0;G.enemies=[];G.bullets=[];
-      G.bossThreshold=0.4+Math.random()*0.2; // 次の夜のボス出現しきい値をリセット
-        G.allies.forEach(a=>{ a.y=MY_Y()-26; a.at=0; a.kbVY=0; });
-        G.normalSpawnInterval=70;G.normalSpawnTimer=100;
-        const _bw2=document.getElementById('boss-wrap'); if(_bw2) _bw2.style.display='none';
-        const _ew=document.getElementById('ehp-wrap'); if(_ew) _ew.style.display='';
-        autoApplySpeed();
-        updateHUD();
-      }else{
-        if(LAST_WAVE > (gd.clearedWave||0)) gd.clearedWave = LAST_WAVE;
-        G.gameOver=true; G.gameWin=true; showResult(true);
-      }
+      if(LAST_WAVE > (gd.clearedWave||0)) gd.clearedWave = gd.stage;
+      G.gameOver=true; G.gameWin=true;
+      showResult(true);
     }
   }
   if(G.myHp<=0&&!G.gameOver){
