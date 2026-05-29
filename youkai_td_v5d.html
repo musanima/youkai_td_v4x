@@ -765,6 +765,7 @@ function setupCardEvents(card,id){
   let longPressTimer=null;
   let didLongPress=false;
   let touchStartX=0, touchStartY=0;
+  let _pendingDrag=null;
 
   function onTouchStart(e){
     if(!G||G.gameOver) return;
@@ -790,28 +791,34 @@ function setupCardEvents(card,id){
       return; // 長押し待ち（タップ・ドラッグ不可）
     }
 
-    // 必殺技なし → ドラッグのみ（タップ召喚なし）
-    startDrag(e);
+    // 必殺技なし → touchmoveで閾値超えたらドラッグ開始（タップでは召喚しない）
+    // startDragはtouchmoveで呼ぶ
+    _pendingDrag=e; // touchstart時点では保留
   }
 
   function onTouchMove(e){
+    const dx=e.touches[0].clientX-touchStartX;
+    const dy=e.touches[0].clientY-touchStartY;
+    const dist=Math.sqrt(dx*dx+dy*dy);
     if(longPressTimer){
       // 移動距離が閾値以上の場合のみ長押しキャンセルしてドラッグに移行
-      const dx=e.touches[0].clientX-touchStartX;
-      const dy=e.touches[0].clientY-touchStartY;
-      if(Math.sqrt(dx*dx+dy*dy)>DRAG_THRESHOLD){
+      if(dist>DRAG_THRESHOLD){
         clearTimeout(longPressTimer); longPressTimer=null;
         card.classList.remove('pressing');
         startDrag(e);
       }
+    } else if(_pendingDrag && dist>DRAG_THRESHOLD){
+      // 必殺技なしの場合: 閾値超えたらドラッグ開始
+      startDrag(_pendingDrag);
+      _pendingDrag=null;
     }
   }
 
   function onTouchEnd(e){
     if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; }
     card.classList.remove('pressing');
+    _pendingDrag=null; // タップでは召喚しない
     if(didLongPress){ didLongPress=false; return; }
-
   }
 
   function startDrag(e){
