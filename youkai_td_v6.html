@@ -49,7 +49,7 @@ body{background:#111;display:flex;justify-content:center;font-family:'Noto Serif
 .cc-emoji{font-size:26px;}
 .cc-info .cc-name{font-size:12px;color:#fff;font-weight:700;}
 .cc-info .cc-lv{font-size:10px;color:#ffd740;margin-top:2px;}
-.cc-info .cc-ult-desc{font-size:10px;color:#f3a;margin-top:7px;line-height:1.3;color:#ffb347;}
+.cc-info .cc-ult-desc{font-size:11px;color:#ffb347;margin-top:7px;line-height:1.35;}
 .cc-stats{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap;}
 .stat-tag{font-size:11px;padding:3px 8px;border-radius:5px;background:rgba(255,255,255,0.1);color:#ddd;}
 .form-footer{padding:8px 12px;background:rgba(0,0,0,0.45);border-top:1px solid rgba(255,255,255,0.07);display:flex;gap:8px;align-items:center;flex-shrink:0;}
@@ -565,7 +565,7 @@ function renderFormation(){
     const sel=deployedIds.includes(def.id);
     const c=document.createElement('div'); c.className='char-card'+(sel?' selected':'');
     const hp=Math.round(def.baseHp*lvMult(dat.lv)), atk=Math.round(def.baseAtk*lvMult(dat.lv));
-    c.innerHTML=`<div class="cc-top"><span class="cc-emoji">${def.emoji}</span><div class="cc-info"><div class="cc-name">${def.name}</div><div class="cc-lv">Lv ${dat.lv} / 上限${def.lvLimit}</div></div></div><div class="cc-stats"><span class="stat-tag">HP ${hp}</span><span class="stat-tag">ATK ${atk}</span><span class="stat-tag">${def.laneSize}列</span><span class="stat-tag">${def.atkType==='area'?'範囲':'単体'}</span><span class="stat-tag">召喚上限${def.maxField}体</span></div><div class="cc-ult-desc">💥 ${def.ultSkill.desc}</div>`;
+    c.innerHTML=`<div class="cc-top"><span class="cc-emoji">${def.emoji}</span><div class="cc-info"><div class="cc-name">${def.name}</div><div class="cc-lv">Lv ${dat.lv} / 上限${def.lvLimit}</div></div></div><div class="cc-stats"><span class="stat-tag">HP ${hp}</span><span class="stat-tag">ATK ${atk}</span><span class="stat-tag">${def.laneSize}列</span><span class="stat-tag">${def.atkType==='area'?'範囲':'単体'}</span><span class="stat-tag">召喚数${def.maxField}</span></div><div class="cc-ult-desc">💥 ${def.ultSkill.desc}</div>`;
     c.onclick=()=>{
       if(sel){deployedIds=deployedIds.filter(d=>d!==def.id);}
       else if(deployedIds.length<5){deployedIds.push(def.id);}
