@@ -1966,6 +1966,7 @@ function saveGameState(){
     sessionGems:   sessionGems,
     lastUpgradeGems: lastUpgradeGems,
     exchGemBonus: exchGemBonus,
+    charBoostPct: {...charBoostPct},
     deployedIds: [...deployedIds],
     // 味方の状態（defId・lane・hp比率・hasUlt）
     allies: G.allies.map(a=>({
@@ -2059,6 +2060,10 @@ function resumeGame(){
         const dat=gc_data(sc.id);
         if(dat) dat.hasUlt=sc.hasUlt;
       });
+    }
+    // ブースト値を復元
+    if(save.charBoostPct){
+      Object.assign(charBoostPct, save.charBoostPct);
     }
 
     // 味方を復元（中断時の状態を再現）
