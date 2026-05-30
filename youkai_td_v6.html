@@ -653,7 +653,7 @@ const MY_MAX_HP_BASE=1000;
 function laneLeft(l){return LW()*l;}
 function uCX(u){return LW()*u.lane+LW()*u.laneSize/2;}
 function uW(u){return LW()*u.laneSize;}
-function uFS(u){return u.laneSize>=5?Math.round(LW()*0.78):u.laneSize>=2?Math.round(LW()*0.4):Math.round(LW()*0.25);}
+function uFS(u){return u.isBoss?Math.round(LW()*0.78):u.laneSize>=2?Math.round(LW()*0.4):Math.round(LW()*0.25);}
 
 // ゲーム状態
 let G=null; // メインゲーム状態オブジェクト
@@ -958,7 +958,7 @@ function spawnBoss(){
   const bossIdx=(gd.stage-1)%BOSS_DEFS.length; // 夜ごとにボスをローテーション
   const bd={...BOSS_DEFS[bossIdx]};
   bd.hp=Math.round(bd.hp*sc); bd.atk=Math.round(bd.atk*sc); bd.maxHp=bd.hp;
-  const u={...bd,uid:Math.random(),lane:0,x:CW/2,y:EN_Y()+50,at:0,isEnemy:true,isBoss:true,kbVY:0,frozen:0,spdDebuff:0};
+  const u={...bd,laneSize:LANES,uid:Math.random(),lane:0,x:CW/2,y:EN_Y()+50,at:0,isEnemy:true,isBoss:true,kbVY:0,frozen:0,spdDebuff:0};
   G.enemies.push(u);
   triggerBossIntro(bd);
   const _bw=document.getElementById('boss-wrap'); if(_bw) _bw.style.display='';
@@ -1371,6 +1371,10 @@ function goNextStage(){
     hasUlt: a.hasUlt,
   })) : [];
   const savedMyHp = G ? G.myHp : null;
+  // ブースト値と全キャラの必殺技解放状態を保存
+  const savedBoost = Object.assign({}, charBoostPct);
+  const savedHasUlt = {};
+  gd.chars.forEach(c=>{ savedHasUlt[c.id]=c.hasUlt; });
 
   if(gd.stage>=LAST_WAVE){ gd.stage=1; gd.run++; }
   else { gd.stage++; }
@@ -1386,6 +1390,11 @@ function goNextStage(){
     initG();
     resGems=_savedResGems; // 霊玉を持ち越し
     sessionGems=_savedResGems; // HUD表示用にも反映
+    // ブースト値を復元
+    Object.assign(charBoostPct, savedBoost);
+    // 全キャラの必殺技解放状態を復元
+    gd.chars.forEach(c=>{ if(savedHasUlt[c.id]!==undefined) c.hasUlt=savedHasUlt[c.id]; });
+    Object.keys(savedHasUlt).forEach(id=>{ if(savedHasUlt[id]) G.ultReady[id]=true; });
     // 前の夜のキャラをspawnAllyと同等の形で復元
     savedAllies.forEach(s=>{
       const id=s.defId;
